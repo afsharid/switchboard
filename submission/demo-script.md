@@ -40,10 +40,14 @@ site tools* is on too.
 *Type into the agent:*
 
 > "Look at my models. Build me a routing policy that keeps total spend under
-> twenty dollars a month, and keep realtime p95 under four seconds."
+> twenty-five dollars a month, and keep realtime p95 under four seconds."
 
-*(The agent should first propose the $20 total cap so the constraint becomes
-auditable, then propose routing that fits inside it.)*
+*Use $25, not $20.* The compliant floor is $22.84/mo — realtime has exactly one
+eligible model at $9.39, the cheapest eligible batch model is $11.02, and the
+customer-data class adds $2.43. Asking for $20 makes the agent explain, with the
+arithmetic, that the target is unreachable without relaxing a constraint. That
+is genuinely good behaviour and worth one sentence if you have room, but it
+muddies a three-minute arc, so ask for $25 and let it land at $22.84.
 
 *Let it run. Point at the activity feed as calls land.*
 
@@ -66,9 +70,14 @@ auditable, then propose routing that fits inside it.)*
 > gets told to wait."
 
 *Type a rejection note and click Reject:*
-`don't fall back to a model that failed its quality gates`
+`realtime has no fallback — if GPT 5.6 Luna goes down the whole class is dead`
 
 > "I reject it, with a reason."
+
+*(Verified: the agent proposes empty `fallbackModelIds`, so a note about
+removing a bad fallback lands on nothing and the agent correctly refuses to
+resubmit. Fallback depth is a real objection it can act on — `find_waste`
+flags the same thing as THIN_ELIGIBILITY.)*
 
 *Wait for the agent to poll.*
 
@@ -76,8 +85,8 @@ auditable, then propose routing that fits inside it.)*
 
 *Second proposal appears. Click **Approve & apply**.*
 
-> "Two hundred and fifty-five dollars down to about twenty-eight. Applied only
-> because I approved it."
+> "Two hundred and fifty-five dollars a month down to about twenty-three.
+> Applied only because I approved it."
 
 ### 1:50–2:30 — The part the agent can't solve, and who can
 

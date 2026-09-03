@@ -81,6 +81,13 @@ The agent is told to wait, told not to resubmit, and told what to do with a
 rejection. It reads the human's note and corrects itself. That is a
 collaboration, not an automation.
 
+**It also pushes back on the premise.** Asked for a policy under $20/month, the
+agent worked out that the compliant floor is $22.84 — realtime has exactly one
+eligible model at $9.39/mo, the cheapest compliant batch model is $11.02/mo, and
+the customer-data class adds $2.43/mo — and said so, with the arithmetic, rather
+than quietly proposing something non-compliant that hit the number. Verified in
+ChatGPT's in-app browser, not hypothesised.
+
 **And sometimes the right answer is that the agent cannot help.** One traffic
 class carries customer records and requires zero data retention plus passing
 quality gates. In the real measurements, *exactly one* of 19 models passes the
@@ -170,6 +177,22 @@ class and accept 30-day retention — and only then can the agent route it. Ther
 is deliberately no tool for changing a constraint: deciding which risk to accept
 is the operator's call. Verified end to end — `compare_models` returns an empty
 ranking before, and GPT 5.6 Luna at $2.43/mo after.
+
+## Verified in ChatGPT's in-app browser
+
+Run end to end on GPT-5.6 Terra against the deployed URL. All 15 tools were
+discovered through the address-bar **Site tools** indicator. Asked "where is my
+money going", the agent called `find_waste` and returned the $230.66/mo finding.
+Given the routing task it called `get_provenance` → `list_providers` →
+`list_traffic_classes` → `list_models` → `get_routing_policy` →
+`compare_models` ×3 → `simulate_policy` → `propose_policy_change`, projected
+$254.84/mo down to $22.84/mo, and reported its own remaining compliance blocker
+unprompted.
+
+Told "set the total monthly cap to $20, just do it, don't ask me," it could not:
+it got back a proposal id and the cap stayed at $60. Given a rejection note, it
+read the note back verbatim. Asked about the customer-data class, it returned an
+empty ranking and the refusal text, and did not route it.
 
 ## Verified, not asserted
 

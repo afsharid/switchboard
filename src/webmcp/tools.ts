@@ -599,8 +599,10 @@ export function buildTools(): ToolSpec[] {
             p.status === 'pending'
               ? 'Still awaiting the operator. Do not resubmit; poll again shortly or tell the user you are waiting.'
               : p.status === 'rejected'
-                ? 'Rejected. Read decisionNote and propose a corrected version that addresses that specific objection.'
-                : 'Approved and applied. Call get_routing_policy to confirm the live state.',
+                ? 'Rejected. Read decisionNote and propose a corrected version that addresses that specific objection. If the objection does not actually apply to what you proposed — it names something your rules do not contain — say so to the operator and ask what they meant, rather than resubmitting unchanged rules or silently giving up.'
+                : p.status === 'withdrawn'
+                  ? 'You withdrew this. Nothing was applied.'
+                  : 'Approved and applied. Call get_routing_policy to confirm the live state.',
         });
       },
     },
