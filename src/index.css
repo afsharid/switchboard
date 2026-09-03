@@ -8,7 +8,7 @@
   --surface-2: #222221;
   --ink: #ffffff;
   --ink-2: #c3c2b7;
-  --ink-muted: #898781;
+  --ink-muted: #8b8984;   /* 4.98:1 on surface-1, 4.56:1 on surface-2 */
   --grid: #2c2c2a;
   --axis: #383835;
   --hairline: rgba(255, 255, 255, 0.10);
@@ -17,11 +17,23 @@
   --series-1: #3987e5;
   --series-2: #d95926;
 
-  /* status — fixed, always paired with an icon or label, never colour alone */
+  /* status — fixed, always paired with an icon or label, never colour alone.
+     These are the FILL steps: dots, meters, button backgrounds, where 3:1 is
+     the bar for a non-text mark. */
   --good: #0ca30c;
   --warning: #fab219;
   --serious: #ec835a;
   --critical: #d03b3b;
+
+  /* Text steps of the same roles. WCAG wants 4.5:1 for small text and the
+     fill steps do not clear it against a tinted chip — critical text sat at
+     3.17:1. Lighter steps, computed against each chip's composited
+     background, following the palette's own precedent of a separate
+     success-text value. */
+  --good-text: #1ba91b;
+  --warning-text: #fab219;
+  --critical-text: #db6a6a;
+  --info-text: #4d93e8;
 
   --font: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -39,6 +51,28 @@ body {
     background: var(--surface-1);
     border: 1px solid var(--hairline);
     border-radius: 0.75rem;
+  }
+}
+
+/* iOS zooms the viewport when a focused control is under 16px, which on a phone
+   yanks the layout sideways mid-demo. Density matters on a desktop dashboard,
+   so the bump is scoped to small screens — along with tap targets, which at
+   21px were well under the 32px compact minimum. */
+@media (max-width: 640px) {
+  input, select, textarea, button {
+    font-size: 16px !important;
+  }
+  select, input[type="number"], input[type="text"] {
+    min-height: 36px;
+  }
+  summary {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+  }
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
   }
 }
 

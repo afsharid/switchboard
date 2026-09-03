@@ -36,6 +36,7 @@ export function projectClass(
 
   let tailRisk = 0;
   let link = 0;
+  const unmeasuredLinks: string[] = [];
 
   for (const id of chain) {
     const m = models.get(id);
@@ -43,6 +44,9 @@ export function projectClass(
     costPerCall += reach * costPerAttemptUsd(m, cls.avgInputTokens, cls.avgOutputTokens);
     const p50 = m.measured?.medianLatencyMs ?? 0;
     const p95 = m.measured?.p95LatencyMs ?? 0;
+    // An unmeasured link contributes 0ms because inventing a number would be
+    // worse — but that makes the sum a lower bound, so name the links.
+    if (!m.measured) unmeasuredLinks.push(m.id);
     expectedLatency += reach * p50;
     // Worst case means worst case: if the primary fails you pay its latency
     // AND the fallback's. Summing the whole chain unconditionally, with the
@@ -69,6 +73,7 @@ export function projectClass(
     expectedLatencyMs: Math.round(expectedLatency),
     worstCaseLatencyMs: Math.round(worstCase),
     tailRiskProbability: tailRisk,
+    unmeasuredLinks,
     deliveredPerMonth,
   };
 }

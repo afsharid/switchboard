@@ -25,8 +25,8 @@ export function Stat({ label, value, unit, context, tone = 'neutral' }: {
   tone?: 'neutral' | 'good' | 'warning' | 'critical';
 }) {
   const color =
-    tone === 'good' ? 'var(--good)' : tone === 'warning' ? 'var(--warning)'
-    : tone === 'critical' ? 'var(--critical)' : 'var(--ink)';
+    tone === 'good' ? 'var(--good-text)' : tone === 'warning' ? 'var(--warning-text)'
+    : tone === 'critical' ? 'var(--critical-text)' : 'var(--ink)';
   return (
     <div className="card p-4">
       <div className="text-xs" style={{ color: 'var(--ink-muted)' }}>{label}</div>
@@ -55,12 +55,14 @@ export function Meter({ value, max, over }: { value: number; max: number; over: 
 export function Badge({ children, tone = 'neutral', title }: {
   children: ReactNode; tone?: 'neutral' | 'good' | 'warning' | 'critical' | 'info'; title?: string;
 }) {
+  // text uses the *-text steps so 11px labels clear 4.5:1 against the chip;
+  // the chip fill keeps the status hue
   const map = {
     neutral: ['var(--ink-2)', 'rgba(255,255,255,0.06)'],
-    info: ['var(--series-1)', 'rgba(57,135,229,0.14)'],
-    good: ['var(--good)', 'rgba(12,163,12,0.14)'],
-    warning: ['var(--warning)', 'rgba(250,178,25,0.14)'],
-    critical: ['var(--critical)', 'rgba(208,59,59,0.16)'],
+    info: ['var(--info-text)', 'rgba(57,135,229,0.14)'],
+    good: ['var(--good-text)', 'rgba(12,163,12,0.14)'],
+    warning: ['var(--warning-text)', 'rgba(250,178,25,0.14)'],
+    critical: ['var(--critical-text)', 'rgba(208,59,59,0.16)'],
   } as const;
   const [fg, bg] = map[tone];
   return (

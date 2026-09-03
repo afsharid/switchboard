@@ -71,6 +71,7 @@ const projSummary = (p: ReturnType<typeof currentProjection>) => ({
     expectedLatencyMs: c.expectedLatencyMs,
     worstCaseLatencyMs: c.worstCaseLatencyMs,
     tailRiskProbabilityPct: r2(c.tailRiskProbability * 100),
+    unmeasuredLinks: c.unmeasuredLinks,
   })),
   perProviderMonthlyUsd: Object.fromEntries(
     Object.entries(p.perProviderUsd).map(([k, v]) => [k, r2(v)]),

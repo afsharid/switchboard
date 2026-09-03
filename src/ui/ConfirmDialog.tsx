@@ -91,7 +91,9 @@ export function ConfirmDialog({
           <button
             ref={confirmRef}
             onClick={onConfirm}
-            className="rounded px-3 py-1.5 text-xs font-medium text-black"
+            // white on --critical is 4.80:1; black was 4.37:1 and missed AA,
+            // and white keeps the status colour itself exact
+            className="rounded px-3 py-1.5 text-xs font-medium text-white"
             style={{ background: 'var(--critical)' }}
           >
             {confirmLabel}

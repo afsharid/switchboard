@@ -15,8 +15,8 @@ Built for the [OpenAI WebMCP Challenge](https://webmcp.devpost.com/).
 
 ## How this was built
 
-Written by me with two AI coding agents, used for different things because they
-could reach different places.
+Written by me with three AI coding agents, used for different things because
+they could reach different places and see different problems.
 
 **Claude Opus 5** (Claude Code) wrote the application, the seed-extraction
 script, the domain logic and the test suite, and verified it against Chrome
@@ -54,6 +54,36 @@ Claude had no way to reach. That was not a formality. It found two real defects:
    number. It also showed that a rejection note referring to a fallback landed
    on nothing, because the agent proposes empty fallback chains. Both the demo
    script and `get_proposal_status`'s guidance changed as a result.
+
+**Antigravity (Gemini 3)** audited the repository with no context from either
+of the other two: it checked every factual claim in this README and the Devpost
+description against the code and data, tried to falsify the approval guard by
+tracing call paths, and measured the layout at 390/768/1440px. Its report is in
+[`docs/audit-antigravity.md`](docs/audit-antigravity.md). It confirmed the guard
+is airtight — no tool reaches `applyRulesDirect`, `setProviderBudgetDirect`,
+`setTotalBudget` or `setClassConstraint`, and `createProposal` hardcodes
+`status: 'pending'` so a crafted argument cannot self-approve — and found:
+
+- **Five stale or wrong numbers in my own documentation**, including a check
+  count I had not updated after adding fourteen tests. All corrected.
+- **Unmeasured models silently passed every performance constraint.** Each check
+  was guarded by `&& m.measured &&`, so a model with no data slipped past
+  quality gates, latency ceilings and success floors with no blocker *and no
+  warning* — the same "unknown means safe" mistake the governance checks were
+  written to avoid. Now raises `UNVERIFIABLE`.
+- **`minSuccessRate` was documented as chain-level but evaluated per-model,**
+  with the chain check using a hardcoded 0.9 that ignored the class's own floor.
+  The chain check now uses the class floor as a blocker, and a below-floor
+  *fallback* softens to a warning like latency and quality gates already did —
+  that inconsistency was an oversight, not a decision.
+- **A 292px horizontal overflow on a 390px phone.** Grid items default to
+  `min-width: auto`, so the 640px model table stretched the whole page. Fixed
+  with `min-w-0`; also bumped form controls to 16px and 36px tall below 640px,
+  since iOS auto-zooms on smaller text and a 21px select is not a tap target.
+- **Small text and status badges below WCAG AA.** Status *fill* steps were being
+  used as *text* colours, putting critical labels at 3.17:1 on their own chip.
+  Text-specific steps are now derived and every small text on the page clears
+  4.5:1, verified by measuring the rendered DOM rather than by eye.
 
 Every design decision — the idea, the stack, publishing the measurement data,
 making constraint relaxation a human-only control — was mine. The commit history
@@ -120,7 +150,7 @@ tool return channel**. No out-of-band signalling:
 ```
 agent  → propose_policy_change({rules, rationale})
 site   ← "Proposal P-1 created and shown to the operator. Nothing applied.
-          Moves projected spend from $255.31/mo to $23.94/mo.
+          Moves projected spend from $254.84/mo to $22.84/mo.
           Call get_proposal_status with proposalId "P-1"."
 human  → Reject, note: "don't fall back to a model that failed its quality gates"
 agent  → get_proposal_status({proposalId: "P-1"})
@@ -284,7 +314,7 @@ the cost/latency scatter is carried by two validated hues **plus** marker shape
 `document.modelContext` API — registration, `getTools()`, `executeTool()` — so
 the host round trip is covered rather than the handlers being called directly.
 It also clicks the human half of the approval loop, because the guard is only
-real if that half works. 35 checks, including:
+real if that half works. 49 checks, including:
 
 - the agent cannot mutate a budget or a policy, and the cap is *verified*
   unchanged after it tries

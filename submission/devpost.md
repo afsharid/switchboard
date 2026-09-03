@@ -46,7 +46,7 @@ plus a note**.
 ## What people and agents can do together that was difficult or impossible before
 
 **Before:** deciding where model traffic should go meant a human reading a
-19-row spreadsheet of prices against a separate benchmark report, doing the
+26-row catalogue of prices against a separate benchmark report, doing the
 cost-per-successful-output arithmetic by hand, and remembering which models are
 contractually off-limits for customer data. An agent could not help, because
 the only way in was a dashboard it would have had to screen-scrape — and no
@@ -65,7 +65,7 @@ return channel** — no out-of-band signalling, no side channel:
 ```
 agent  → propose_policy_change({rules, rationale})
 site   ← "Proposal P-1 created and shown to the operator. Nothing applied.
-          Moves projected spend $254.84/mo → $45.50/mo.
+          Moves projected spend $254.84/mo → $22.84/mo.
           Warning: candidate still has 2 compliance blockers: SUCCESS_RATE, RETENTION.
           Call get_proposal_status with proposalId "P-1"."
 human  → Reject — "don't fall back to GLM 5.2, it fails the quality gates"
@@ -106,7 +106,7 @@ The agent surfaces the trade-off and stops. That refusal is the feature.
 
 | | Tools |
 |---|---|
-| **Read-only** (`readOnlyHint: true`) | `get_provenance`, `list_providers`, `list_traffic_classes`, `list_models`, `get_model`, `compare_models`, `get_routing_policy`, `simulate_policy`, `check_compliance`, `find_waste` |
+| **Read-only** (`readOnlyHint: true`, 11 tools) | `get_provenance`, `list_providers`, `list_traffic_classes`, `list_models`, `get_model`, `compare_models`, `get_routing_policy`, `simulate_policy`, `check_compliance`, `find_waste`, `get_proposal_status` |
 | **Guarded** — create a proposal, mutate nothing | `propose_policy_change`, `propose_budget_change` (provider cap or total cap) |
 | **Unguarded write** — applies immediately, spends nothing | `pin_insight` |
 | **Poll / retract** | `get_proposal_status`, `withdraw_proposal` |
@@ -198,7 +198,7 @@ empty ranking and the refusal text, and did not route it.
 
 `tests/webmcp.e2e.mjs` in the repo drives a real Chrome through the genuine
 `document.modelContext` API and clicks the human half of the approval loop.
-**35 checks, all passing** — including that the agent's budget change leaves the
+**49 checks, all passing** — including that the agent's budget change leaves the
 cap *verifiably* unchanged, that a rejection note is read back verbatim, that
 undocumented governance metadata blocks a constrained class, and that there are
 no uncaught runtime errors. Run it against the live URL with
@@ -206,7 +206,7 @@ no uncaught runtime errors. Run it against the live URL with
 
 ## How it was built
 
-Two coding agents, used for different reasons. **Claude Opus 5** wrote the app,
+Three coding agents, used for different reasons. **Claude Opus 5** wrote the app,
 the domain logic and the test suite and verified it in Chrome Canary.
 **ChatGPT / Codex** drove the deployed page through ChatGPT's own in-app browser
 — the browser this is judged in, and the one Claude could not reach — and found
@@ -215,8 +215,18 @@ is never shown in that browser, so "Reset demo" was silently dead there, and
 that `worstCaseLatencyMs` was quietly applying an undocumented threshold that
 made a 7.8-second chain report 3.6 seconds and read as compliant.
 
+**Antigravity (Gemini 3)** audited the whole thing cold — every documented
+claim against the code, the approval guard by tracing call paths, the layout at
+three viewport widths. It confirmed the guard is airtight and found five wrong
+numbers in my own docs, a hole where unmeasured models silently passed every
+performance constraint, a documented-vs-actual mismatch in how success rates
+were judged, a 292px overflow on a 390px phone, and status badges below WCAG AA.
+All fixed; its report is committed at `docs/audit-antigravity.md`.
+
 Every design decision was mine. The README documents which agent contributed
-what, and the commit history records it.
+what, and the commit history records it. Using three different model families
+was not a gimmick — each one found a class of defect the others structurally
+could not see.
 
 ## Stack
 

@@ -146,7 +146,7 @@ export function ProposalsPanel() {
               {after !== null && (
                 <p className="mt-2 text-xs tnum">
                   {usd(before)}/mo → <strong>{usd(after)}/mo</strong>{' '}
-                  <span style={{ color: after <= before ? 'var(--good)' : 'var(--critical)' }}>
+                  <span style={{ color: after <= before ? 'var(--good-text)' : 'var(--critical-text)' }}>
                     ({after <= before ? '−' : '+'}{usd(Math.abs(after - before))})
                   </span>
                 </p>
@@ -170,7 +170,7 @@ export function ProposalsPanel() {
                 <button
                   onClick={() => decideProposal(p.id, 'rejected', notes[p.id]?.trim() || null)}
                   className="rounded border px-3 py-1.5 text-xs font-medium"
-                  style={{ borderColor: 'var(--critical)', color: 'var(--critical)' }}
+                  style={{ borderColor: 'var(--critical)', color: 'var(--critical-text)' }}
                 >
                   Reject
                 </button>
@@ -365,7 +365,7 @@ export function ProvidersPanel() {
               <div className="flex items-baseline justify-between gap-2 text-xs">
                 <span>{pr.name}</span>
                 <span className="flex items-baseline gap-1.5">
-                  <span className="tnum" style={{ color: over ? 'var(--critical)' : 'var(--ink-2)' }}>
+                  <span className="tnum" style={{ color: over ? 'var(--critical-text)' : 'var(--ink-2)' }}>
                     {usd(spend)} / ${pr.monthlyBudgetUsd}
                   </span>
                   {over && <Badge tone="critical" title="projected spend exceeds this cap">⚠ over</Badge>}
@@ -521,7 +521,7 @@ export function ActivityPanel() {
               onClick={() => setOpen(open === a.id ? null : a.id)}
               className="flex w-full items-baseline gap-2 rounded px-1 py-1 text-left text-[11px] hover:bg-white/5"
             >
-              <span style={{ color: a.ok ? 'var(--good)' : 'var(--critical)' }}>{a.ok ? '●' : '▲'}</span>
+              <span style={{ color: a.ok ? 'var(--good-text)' : 'var(--critical-text)' }}>{a.ok ? '●' : '▲'}</span>
               <span className="font-medium">{a.tool}</span>
               <span className="ml-auto tnum" style={{ color: 'var(--ink-muted)' }}>
                 {a.durationMs < 1 ? '<1ms' : `${a.durationMs}ms`}

@@ -77,6 +77,8 @@ export type ClassProjection = {
   worstCaseLatencyMs: number;
   /** probability the primary fails and a fallback is attempted at all */
   tailRiskProbability: number;
+  /** chain links with no latency measurements — worstCaseLatencyMs is a lower bound while non-empty */
+  unmeasuredLinks: string[];
   deliveredPerMonth: number;
 };
 

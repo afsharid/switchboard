@@ -25,7 +25,7 @@ site tools* is on too.
 
 *Point at the KPI row.*
 
-> "Two hundred and fifty-five dollars a month projected against a sixty-dollar cap, eight compliance
+> "Two hundred and fifty-five dollars a month projected against a sixty-dollar cap, six compliance
 > blockers. This is Switchboard, and the numbers on it are my own measurements."
 
 ### 0:18–0:32 — What the agent sees

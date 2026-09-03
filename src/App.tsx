@@ -74,13 +74,16 @@ export function App() {
       <KpiRow />
 
       <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-3">
+        {/* min-w-0: grid items are min-width:auto by default, so the 640px
+            model table inside this column stretched the whole page and gave
+            phones 292px of horizontal scroll */}
+        <div className="min-w-0 space-y-3">
           <SimulationBanner />
           <ProposalsPanel />
           <ClassesPanel />
           <ModelsPanel />
         </div>
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           <ProvidersPanel />
           <InsightsPanel />
           <WastePanel />

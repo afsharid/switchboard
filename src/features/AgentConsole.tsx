@@ -100,7 +100,7 @@ export function AgentConsole({ specs, status }: { specs: ToolSpec[]; status: Too
         </p>
       )}
       {status.error && (
-        <p className="mb-3 rounded p-2 text-[11px]" style={{ background: 'var(--surface-2)', color: 'var(--critical)' }}>
+        <p className="mb-3 rounded p-2 text-[11px]" style={{ background: 'var(--surface-2)', color: 'var(--critical-text)' }}>
           Registration error: {status.error}
         </p>
       )}
