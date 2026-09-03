@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/* Palette roles from the validated reference instance, dark surface. */
+:root {
+  color-scheme: dark;
+  --plane: #0d0d0d;
+  --surface-1: #1a1a19;
+  --surface-2: #222221;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --ink-muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --hairline: rgba(255, 255, 255, 0.10);
+
+  /* categorical, dark steps — slots 1 and 2 only (validated all-pairs) */
+  --series-1: #3987e5;
+  --series-2: #d95926;
+
+  /* status — fixed, always paired with an icon or label, never colour alone */
+  --good: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html, body { background: var(--plane); }
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer utilities {
+  .tnum { font-variant-numeric: tabular-nums; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+    border-radius: 0.75rem;
+  }
+}
+
+/* Recharts chrome recessive by default */
+.recharts-cartesian-axis-tick text { fill: var(--ink-muted); font-size: 11px; }
+.recharts-cartesian-grid line { stroke: var(--grid); }
+.recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line { stroke: var(--axis); }
