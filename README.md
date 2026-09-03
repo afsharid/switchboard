@@ -146,13 +146,33 @@ VOLTWISE_ROOT=/path/to/eval/repo npm run seed
 
 ## Seeing the tools
 
-**In ChatGPT's in-app browser** — open the live URL and ask for something, e.g.
+**In ChatGPT's desktop app** (what the challenge calls the in-app browser, and
+what ChatGPT calls *site tools*):
+
+1. Update the desktop app to the latest version.
+2. **Pick GPT-5.6 Sol or GPT-5.6 Terra.** Site tools are disabled on GPT-5.6
+   Luna, so nothing will happen on that model.
+3. Check *Settings → Browser → Permissions → Enable site tools* is on. Site
+   tools are not available in Enterprise or Education workspaces.
+4. Open the built-in browser from the app toolbar and go to the live URL.
+5. The address bar shows **Site tools** — grey when a page offers them, blue
+   while ChatGPT is using them. *Available site tools* lists all 15.
+6. Then ask for something, e.g.
 
 > Look at my models. Build me a routing policy that keeps total spend under $20
 > a month, never routes customer data to a model that trains on it or retains it,
 > and keeps realtime p95 under 4 seconds.
 
-**In Chrome** — enable `chrome://flags/#enable-webmcp-testing`, reload, then:
+**In Chrome** — WebMCP needs Chrome 153+ (Canary at the time of writing) with
+`chrome://flags/#enable-webmcp-testing`. This script sets the flag in a
+throwaway profile so you do not have to:
+
+```bash
+./scripts/open-in-chrome.sh                    # the deployed URL
+./scripts/open-in-chrome.sh http://localhost:5173/
+```
+
+Then in the DevTools console:
 
 ```js
 await document.modelContext.getTools()   // 15 tools with their schemas

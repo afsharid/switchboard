@@ -7,6 +7,11 @@ with `chrome://flags/#enable-webmcp-testing`.
 Before recording: click **Reset demo** so the seeded state is clean, and close
 the Agent console panel's output if it has stale text.
 
+**If recording in the ChatGPT desktop app:** select **GPT-5.6 Sol** or
+**GPT-5.6 Terra** first. Site tools are disabled on GPT-5.6 Luna and the agent
+will simply not see the tools. Check *Settings → Browser → Permissions → Enable
+site tools* is on too.
+
 ---
 
 ### 0:00–0:18 — The problem, on screen
