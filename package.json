@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "seed": "tsx scripts/extract-seed.ts",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name switchboard"
+    "deploy": "npm run build && wrangler pages deploy dist --project-name switchboard",
+    "test:e2e": "node tests/webmcp.e2e.mjs",
+    "preview:test": "vite preview --port 4319"
   },
   "dependencies": {
     "react": "^19.2.0",

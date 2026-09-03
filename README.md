@@ -186,6 +186,35 @@ red/green status pair failed CVD separation as a primary channel, so identity on
 the cost/latency scatter is carried by two validated hues **plus** marker shape
 **plus** a legend, never hue alone.
 
+## Testing
+
+`tests/webmcp.e2e.mjs` drives a real Chrome through the actual
+`document.modelContext` API — registration, `getTools()`, `executeTool()` — so
+the host round trip is covered rather than the handlers being called directly.
+It also clicks the human half of the approval loop, because the guard is only
+real if that half works. 35 checks, including:
+
+- the agent cannot mutate a budget or a policy, and the cap is *verified*
+  unchanged after it tries
+- a rejection note is read back verbatim by the agent, which is then told to
+  correct rather than resubmit
+- unknown governance metadata blocks a constrained class rather than being
+  assumed safe
+- bad input returns a corrective string naming the valid values instead of
+  throwing
+- no uncaught runtime errors
+
+```bash
+npm run build
+npm run preview:test &      # serves dist on :4319
+npm run test:e2e
+TARGET=https://your-url npm run test:e2e   # or against a deployment
+```
+
+Needs a Chrome with WebMCP (153+; Canary at the time of writing) and sets
+`enable-webmcp-testing` in a throwaway profile itself. Override the binary with
+`CHROME=/path/to/chrome`.
+
 ## Licence
 
 MIT — see [LICENSE](./LICENSE).

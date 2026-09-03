@@ -157,6 +157,16 @@ is deliberately no tool for changing a constraint: deciding which risk to accept
 is the operator's call. Verified end to end — `compare_models` returns an empty
 ranking before, and GPT 5.6 Luna at $2.43/mo after.
 
+## Verified, not asserted
+
+`tests/webmcp.e2e.mjs` in the repo drives a real Chrome through the genuine
+`document.modelContext` API and clicks the human half of the approval loop.
+**35 checks, all passing** — including that the agent's budget change leaves the
+cap *verifiably* unchanged, that a rejection note is read back verbatim, that
+undocumented governance metadata blocks a constrained class, and that there are
+no uncaught runtime errors. Run it against the live URL with
+`TARGET=<url> npm run test:e2e`.
+
 ## Stack
 
 Vite + React 19 + TypeScript, Tailwind v4, Zustand, Recharts. No backend, no
