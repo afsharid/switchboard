@@ -116,3 +116,17 @@ auditable, then propose routing that fits inside it.)*
 - Have the Reset demo button ready for a second take.
 - ffmpeg is installed if you need to trim: 
   `ffmpeg -i in.mov -ss 0 -t 175 -c copy out.mov`
+---
+
+## Rules compliance for the video (from the official rules)
+
+- **Under 3:00.** "Judges are not required to watch beyond three minutes."
+- **Public on YouTube.** Not unlisted — "made publicly visible on YouTube."
+- **Audio required,** and it must cover "what you built and how you used
+  WebMCP." The script does both; do not drop the WebMCP explanation at 0:18.
+- **No copyrighted music.** No backing track at all is the safe choice.
+- **No third-party logos.** Naming models (GPT, Kimi, Qwen, GLM) is factual
+  descriptive use and unavoidable for this project, but do not put provider
+  logos, marketing screenshots or brand imagery on screen.
+- **Nothing on screen you do not have rights to** — close unrelated tabs,
+  Slack, email, and anything with someone else's content in it.

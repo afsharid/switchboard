@@ -13,6 +13,27 @@ Built for the [OpenAI WebMCP Challenge](https://webmcp.devpost.com/).
 
 ---
 
+## Project origin
+
+Switchboard was **written from scratch on 2026-09-03**, inside the WebMCP
+Challenge submission period (2026-08-25 to 2026-09-03). The commit history in
+this repository is the dated record: the first commit creates the project, and
+there is no prior work in it.
+
+One thing predates the period and is not code: the **measurement dataset**. The
+latency, success-rate and cost figures in `src/data/seed.json` come from
+evaluation runs I performed on 2026-08-20 in a separate private repository of
+mine. `scripts/extract-seed.ts` is the new code that derives the shipped dataset
+from those runs, behind a field allowlist and a secret scan. No source code from
+that repository was copied here.
+
+Per OpenCode's terms, the measurement outputs are mine to publish: *"you own the
+Output. We hereby assign to you all our right, title, and interest, if any, in
+and to Output."* Their terms contain no restriction on publishing benchmark or
+evaluation results. Model prices and governance metadata are factual figures
+transcribed from published provider and gateway documentation, with retrieval
+dates recorded.
+
 ## Why this use case needs WebMCP
 
 The operations that matter here are **computations over the site's data model**,

@@ -43,7 +43,21 @@ And when the agent proposes something, the human gets a rule-by-rule diff with
 the cost delta and the compliance verdict, and answers with **Approve, or Reject
 plus a note**.
 
-## What people and agents accomplish together
+## What people and agents can do together that was difficult or impossible before
+
+**Before:** deciding where model traffic should go meant a human reading a
+19-row spreadsheet of prices against a separate benchmark report, doing the
+cost-per-successful-output arithmetic by hand, and remembering which models are
+contractually off-limits for customer data. An agent could not help, because
+the only way in was a dashboard it would have had to screen-scrape — and no
+sane operator hands an agent the ability to redirect spend on the strength of a
+screenshot.
+
+**Now:** the agent does the arithmetic across the whole catalogue in seconds,
+against the same measurements the human sees, and proposes a change the human
+can check line by line. What is genuinely new is not the automation — it is that
+the agent can be given real authority over a consequential decision *because*
+the authority is bounded by the tool surface rather than by trust.
 
 The approval loop is an **asynchronous handshake carried entirely by the tool
 return channel** — no out-of-band signalling, no side channel:
