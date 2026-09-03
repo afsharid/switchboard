@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { buildTools } from './webmcp/tools';
 import { useTools, type ToolSpec } from './webmcp/useTool';
 import { useSwitchboard } from './store/useSwitchboard';
 import { Badge } from './ui/primitives';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 import { AgentConsole } from './features/AgentConsole';
 import {
   ActivityPanel, ClassesPanel, InsightsPanel, KpiRow, ModelsPanel, ProposalsPanel,
@@ -36,6 +37,7 @@ export function App() {
   const resetDemo = useSwitchboard((s) => s.resetDemo);
   const proposals = useSwitchboard((s) => s.proposals);
   const specs = useMemo(() => withLogging(buildTools()), []);
+  const [confirmReset, setConfirmReset] = useState(false);
   const status = useTools(specs);
   const pending = proposals.filter((p) => p.status === 'pending').length;
 
@@ -60,7 +62,7 @@ export function App() {
             : <Badge tone="warning" title="Open in ChatGPT's in-app browser or Chrome with WebMCP enabled">⚠ no WebMCP host</Badge>}
           {pending > 0 && <Badge tone="warning">{pending} awaiting approval</Badge>}
           <button
-            onClick={() => { if (confirm('Reset all routing, budgets, proposals and activity to the seeded demo state?')) resetDemo(); }}
+            onClick={() => setConfirmReset(true)}
             className="rounded border px-2 py-1 text-xs hover:bg-white/5"
             style={{ borderColor: 'var(--hairline)', color: 'var(--ink-muted)' }}
           >
@@ -88,6 +90,15 @@ export function App() {
       </div>
 
       <ProvenanceFooter />
+
+      <ConfirmDialog
+        open={confirmReset}
+        title="Reset to the seeded demo state?"
+        body="This clears the routing policy, budget caps, traffic-class constraints, proposals, pinned insights and the activity feed, and restores everything to the state a first-time visitor sees."
+        confirmLabel="Reset demo"
+        onConfirm={() => { resetDemo(); setConfirmReset(false); }}
+        onCancel={() => setConfirmReset(false)}
+      />
     </div>
   );
 }
