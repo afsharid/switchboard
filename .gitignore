@@ -4,3 +4,7 @@ dist
 .DS_Store
 *.local
 tsconfig.tsbuildinfo
+voice/*.wav
+!voice/0*.wav
+!voice/1*.wav
+voice/narration-full.wav
