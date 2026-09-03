@@ -314,7 +314,19 @@ export function ClassesPanel() {
                 </label>
                 <span style={{ color: 'var(--ink-2)' }}>{usd(p?.monthlyCostUsd ?? 0)}/mo</span>
                 <span style={{ color: 'var(--ink-muted)' }}>delivers {pct(p?.deliveredRate ?? 0)}</span>
-                <span style={{ color: 'var(--ink-muted)' }}>worst case {ms(p?.worstCaseLatencyMs ?? 0)}</span>
+                <span
+                  style={{ color: 'var(--ink-muted)' }}
+                  title={
+                    (p?.tailRiskProbability ?? 0) > 0
+                      ? `Sum of p95 across the whole chain. Reached in the ${pct(p?.tailRiskProbability ?? 0)} of calls where the primary fails.`
+                      : 'p95 of the only model in this chain.'
+                  }
+                >
+                  worst case {ms(p?.worstCaseLatencyMs ?? 0)}
+                  {(p?.tailRiskProbability ?? 0) > 0 && (p?.chain.length ?? 0) > 1 && (
+                    <span> at {pct(p?.tailRiskProbability ?? 0)} risk</span>
+                  )}
+                </span>
               </div>
 
               <p className="mt-2 text-[11px] tnum" style={{ color: 'var(--ink-2)' }}>

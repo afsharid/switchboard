@@ -6,6 +6,12 @@ export type ToolSpec = {
   description: string;
   inputSchema: Record<string, unknown>;
   readOnly?: boolean;
+  /**
+   * What actually happens when this runs. 'proposal' is the only kind that
+   * waits on a human — labelling every non-read tool as needing approval was
+   * simply wrong, since pin_insight and withdraw_proposal apply at once.
+   */
+  effect?: 'read' | 'writes-now' | 'proposal';
   execute: (args: any) => Promise<string> | string;
 };
 

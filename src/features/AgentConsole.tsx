@@ -114,7 +114,10 @@ export function AgentConsole({ specs, status }: { specs: ToolSpec[]; status: Too
       >
         {specs.map((s) => (
           <option key={s.name} value={s.name} style={{ background: 'var(--surface-1)' }}>
-            {s.name}{s.readOnly ? '' : '  · needs approval'}
+            {s.name}
+            {s.effect === 'proposal' ? '  · needs your approval'
+              : s.effect === 'writes-now' ? '  · applies immediately'
+                : ''}
           </option>
         ))}
       </select>

@@ -70,6 +70,7 @@ const projSummary = (p: ReturnType<typeof currentProjection>) => ({
     costPer1kDeliveredUsd: r4(c.costPerDeliveredUsd * 1000),
     expectedLatencyMs: c.expectedLatencyMs,
     worstCaseLatencyMs: c.worstCaseLatencyMs,
+    tailRiskProbabilityPct: r2(c.tailRiskProbability * 100),
   })),
   perProviderMonthlyUsd: Object.fromEntries(
     Object.entries(p.perProviderUsd).map(([k, v]) => [k, r2(v)]),
@@ -84,6 +85,7 @@ export function buildTools(): ToolSpec[] {
     {
       name: 'get_provenance',
       readOnly: true,
+      effect: 'read',
       description:
         'Explain where the numbers on this dashboard come from and how far they can be trusted. Call this before making a recommendation so you can state the limits of your evidence. Returns the measurement date, the run and call counts, and per-model sample sizes. Read samplingCaveat: the measurements are spread across a whole catalogue on a single structured-output task, so per-model sample counts are small — treat medianLatencyMs as indicative and p95LatencyMs as coarse, and say so when a recommendation turns on a latency margin of a second or less. Every field here is prose and counts for you to paraphrase, not a machine-readable prohibition list.',
       inputSchema: { type: 'object', properties: {} },
@@ -107,6 +109,7 @@ export function buildTools(): ToolSpec[] {
     {
       name: 'list_providers',
       readOnly: true,
+      effect: 'read',
       description:
         "List every LLM provider with its monthly budget cap in USD and its projected monthly spend under the policy currently in force, plus the total cap across all providers. Provider ids are kebab-case, e.g. 'opencode-go', 'openai'. Caps are NOT writable by you — there is no set_budget tool; use propose_budget_change, which the operator must approve. Projected spend is derived from operator-declared call volumes and published prices, not from a billing API: there is no billing history, actuals or time series anywhere on this surface, so never describe these figures as what was spent.",
       inputSchema: { type: 'object', properties: {} },
@@ -132,6 +135,7 @@ export function buildTools(): ToolSpec[] {
     {
       name: 'list_traffic_classes',
       readOnly: true,
+      effect: 'read',
       description:
         "List the traffic classes this workload is split into, with the constraints each must satisfy, and how many models are currently eligible for each. Read this before proposing any routing change — the constraints are the whole point and several are not about money. Per class: monthlyCalls and average token counts, which are OPERATOR-DECLARED estimates and not measured (you cannot change them; only the human can, in the UI). Then the constraints: maxP95Ms, minSuccessRate (judged against the chain-level delivery rate, not one model's success rate), requireQualityGates, maxDataRetentionDays (null here means UNCONSTRAINED — the opposite of null on a model, where it means undocumented and therefore not clearable), allowTrainingOnData (false means never route to a model that trains on submitted data, in any chain position, including fallbacks), requireMeasured. You cannot write these constraints — but the operator can, under 'relax constraints' on each class in the UI. So when a class has zero eligible models, the useful move is to name precisely which constraint is emptying the set and what it would cost to relax each one, then let them choose. Do not route around a constraint you were not given permission to relax.",
       inputSchema: { type: 'object', properties: {} },
@@ -148,6 +152,7 @@ export function buildTools(): ToolSpec[] {
     {
       name: 'list_models',
       readOnly: true,
+      effect: 'read',
       description:
         "List the priced model catalogue joined with this operator's own measurements. Prices are per million tokens from published provider documentation. Call get_provenance for how the measurements were produced and how coarse they are. Per model: requestSuccessRate (0-1), medianLatencyMs, p95LatencyMs, observedCalls (the sample size behind those latencies — check it before trusting a small latency gap), costPer1kSuccessfulUsd (cost per 1000 DELIVERED outputs, i.e. price divided by success rate; prefer it over raw price, because a cheap model that fails half its calls is not cheap), and meetsQualityGates. GOVERNANCE, and read this carefully: on a MODEL, dataRetentionDays and trainsOnData are null when the provider does not document them, and null means UNKNOWN, which is not the same as safe. On a TRAFFIC CLASS the same-named constraints being null means UNCONSTRAINED. The two nulls are opposites, so do not carry one across the join. Every governance filter here excludes undocumented models rather than assuming the best. If you only need a set of models that is legal for a class, pass eligibleForClassId and skip the individual filters — it applies the class's real constraints, including the ones these filters cannot express.",
       inputSchema: {
@@ -223,6 +228,7 @@ export function buildTools(): ToolSpec[] {
     {
       name: 'get_model',
       readOnly: true,
+      effect: 'read',
       description:
         'Full detail on one model, including why it failed its quality gates if it did (gateFailureReasons), and a per-class verdict listing exactly which constraint each traffic class would reject it on. Use this when you need to justify excluding a model, or to understand whether a rejection is a hard blocker or a warning you can route around with a fallback.',
       inputSchema: {
@@ -255,6 +261,7 @@ export function buildTools(): ToolSpec[] {
     {
       name: 'compare_models',
       readOnly: true,
+      effect: 'read',
       description:
         "Rank candidate models for one traffic class, using that class's own token profile and declared volume, so the money figures are comparable to each other and to get_routing_policy. Note this differs from the costPer1kSuccessfulUsd in list_models, which uses the measurement task's own token profile — do not quote the two side by side. Only models satisfying every HARD constraint of the class are ranked; the rest come back under rejected with the blocking codes. Ranking: 'cost' = lowest cost per delivered output; 'latency' = lowest measured p95; 'reliability' = highest success rate; 'balanced' (default) = costPerDelivered × (1 + p95ms/10000) × 1.5 if it fails quality gates. Fallbacks: performance constraints (quality gates, latency) soften to warnings for a fallback because a slow answer beats none, but governance constraints (retention, training) never soften — so a model rejected on RETENTION or TRAINING cannot serve this class in any position. Call this before proposing a routing change.",
       inputSchema: {
@@ -329,6 +336,7 @@ export function buildTools(): ToolSpec[] {
     {
       name: 'get_routing_policy',
       readOnly: true,
+      effect: 'read',
       description:
         'The routing policy currently in force, with the resolved primary and fallback chain per traffic class and the projected monthly cost, delivery rate and latency each chain produces. Call this before proposing changes so your proposal is a genuine diff against reality rather than a rewrite from scratch.',
       inputSchema: { type: 'object', properties: {} },
@@ -344,8 +352,9 @@ export function buildTools(): ToolSpec[] {
     {
       name: 'simulate_policy',
       readOnly: true,
+      effect: 'read',
       description:
-        'Project what a candidate routing policy would cost and deliver, WITHOUT applying it. Classes you omit keep their current routing. Definitions: deliveredRatePct is the chain-level probability that some link succeeds, i.e. 1 minus the product of every link failing — this, not a single model\'s requestSuccessRate, is what a class\'s minSuccessRate is judged against. expectedLatencyMs is the probability-weighted median across the chain. worstCaseLatencyMs is the SUM of p95 across every link likely to be attempted, i.e. the tail once fallbacks are exhausted; judge a latency ceiling against this, not the expected value. Cost counts every attempt, since a failed call is still billed. The candidate\'s compliance verdict is returned here too and is the same computation check_compliance runs, so you do not need both — call check_compliance only when you want to audit the LIVE policy. One side effect: this repaints the projection on the operator\'s screen so they can follow your reasoning, so iterate deliberately rather than sweeping dozens of candidates.',
+        'Project what a candidate routing policy would cost and deliver, WITHOUT applying it. Classes you omit keep their current routing. Definitions: deliveredRatePct is the chain-level probability that some link succeeds, i.e. 1 minus the product of every link failing — this, not a single model\'s requestSuccessRate, is what a class\'s minSuccessRate is judged against. expectedLatencyMs is the probability-weighted median across the chain. worstCaseLatencyMs is the SUM of p95 across the WHOLE chain — what a request pays if every link but the last fails. It is reported unconditionally, so it never understates the tail; read tailRiskProbability alongside it, which is the chance of getting past the primary at all. HOW A LATENCY CEILING IS JUDGED, because the two rules interact: a fallback whose own p95 exceeds the ceiling is a WARNING, not a blocker, since a slow answer beats no answer — so the class stays permissible. But the chain\'s summed worst case is checked too and raises a CHAIN_LATENCY warning when it exceeds the ceiling. So a chain can be permissible and still carry a flagged tail. Say which you mean: "the primary meets your 4s ceiling; the chain can reach Xms in the Y% of cases where the primary fails" is the honest phrasing. Cost counts every attempt, since a failed call is still billed. The candidate\'s compliance verdict is returned here too and is the same computation check_compliance runs, so you do not need both — call check_compliance only when you want to audit the LIVE policy. One side effect: this repaints the projection on the operator\'s screen so they can follow your reasoning, so iterate deliberately rather than sweeping dozens of candidates.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -390,6 +399,7 @@ export function buildTools(): ToolSpec[] {
     {
       name: 'check_compliance',
       readOnly: true,
+      effect: 'read',
       description:
         'Audit the live policy — or a candidate rule set if you pass one — against every constraint at once: latency ceilings, success-rate floors, quality gates, data-retention limits, the no-training-on-data requirement, AND the spend caps (TOTAL_BUDGET and PROVIDER_BUDGET blockers when projected spend exceeds a cap). Blockers mean the routing is not permissible as configured; warnings mean permissible but fragile. An empty blockers list is the bar a proposal should clear. Because spend is included, a clean result does mean the plan fits the operator\'s declared budget — but only the budget that is actually recorded, so if they stated a target in conversation, propose it via propose_budget_change first so it becomes auditable. simulate_policy returns this same verdict for a candidate; use this tool for the live policy.',
       inputSchema: { type: 'object', properties: { rules: S.rules } },
@@ -417,6 +427,7 @@ export function buildTools(): ToolSpec[] {
     {
       name: 'find_waste',
       readOnly: true,
+      effect: 'read',
       description:
         'Lint the live policy against the measurements and report everything wrong with it. Each finding carries a kind: "spend" means money is being wasted right now (a routed model that never succeeds, a class routed to something dearer than a compliant alternative, a model over $1 per 1000 delivered outputs that still fails its gates); "risk" means a fragility rather than a cost (a class with one or zero eligible models); "hygiene" means a data gap (catalogue entries priced but never measured). Only "spend" findings carry estimatedMonthlySavingsUsd — do not present risk or hygiene findings as costs. Every finding cites the numbers behind it. Start here when the operator asks an open question like "where is my money going", but say plainly that these are projections from declared volumes, not billed spend.',
       inputSchema: { type: 'object', properties: {} },
@@ -440,6 +451,7 @@ export function buildTools(): ToolSpec[] {
     // ------------------------------------------------------- guarded writes
     {
       name: 'propose_policy_change',
+      effect: 'proposal',
       description:
         'Put a routing change in front of the operator for approval. This does NOT apply the change — routing decides where money and customer data go, so it stays a human decision. The proposal appears on their screen as a rule-by-rule diff with the projected cost delta and the compliance verdict. You will get back a proposal id; poll get_proposal_status to learn what the operator decided and read any note they left. If they reject with a reason, address the reason and propose again rather than resubmitting the same rules.',
       inputSchema: {
@@ -493,6 +505,7 @@ export function buildTools(): ToolSpec[] {
     },
     {
       name: 'propose_budget_change',
+      effect: 'proposal',
       description:
         "Ask the operator to change a monthly spend cap — either the total across all providers (scope 'total') or one provider's cap (scope 'provider'). Like routing, this is not applied directly: a budget is a spending authorisation, so only the human can grant it. WHAT A CAP DOES: it is advisory in the sense that nothing here proxies traffic, but it is enforced as a compliance blocker — check_compliance and simulate_policy both report TOTAL_BUDGET and PROVIDER_BUDGET blockers when projected spend exceeds a cap, so a routing proposal that busts a cap will not come back clean. If the operator states a spending target in conversation, propose it as the total cap so it becomes an auditable constraint rather than something you have to remember. Returns a proposal id to poll with get_proposal_status.",
       inputSchema: {
@@ -552,8 +565,9 @@ export function buildTools(): ToolSpec[] {
     },
     {
       name: 'withdraw_proposal',
+      effect: 'writes-now',
       description:
-        'Retract a proposal you submitted that is still pending, because you have thought better of it or are about to submit a corrected version. Only pending proposals can be withdrawn; an approved one has already been applied and a rejected one is already closed. Prefer this over leaving a stale proposal in the operator\'s queue.',
+        'Retract a proposal you submitted that is still pending, because you have thought better of it or are about to submit a corrected version. Only pending proposals can be withdrawn; an approved one has already been applied and a rejected one is already closed. This applies immediately and needs no approval — withdrawing spends nothing and routes nothing. The proposal stops awaiting a decision but stays in the operator\'s history marked withdrawn; nothing is deleted.',
       inputSchema: {
         type: 'object',
         properties: { proposalId: { type: 'string', description: "Proposal id such as 'P-1'." } },
@@ -567,12 +581,13 @@ export function buildTools(): ToolSpec[] {
           return `Proposal ${existing.id} is already ${existing.status} and cannot be withdrawn.`;
         }
         s.withdrawProposal(existing.id);
-        return `Proposal ${existing.id} withdrawn and removed from the operator's queue.`;
+        return `Proposal ${existing.id} withdrawn. It is no longer awaiting a decision, and shows as withdrawn in the operator's proposal history — the record stays visible, it is not deleted.`;
       },
     },
     {
       name: 'get_proposal_status',
       readOnly: true,
+      effect: 'read',
       description:
         "Check what the operator decided about a proposal you submitted. Status is 'pending' (still on their screen), 'approved' (applied; re-read get_routing_policy to see the new state), 'rejected', or 'withdrawn' (you retracted it). A human decision can take minutes or hours: if it is still pending, report the proposal id to the user and stop rather than looping — do not resubmit the same rules, and use withdraw_proposal if you want to replace it. A rejection usually carries decisionNote explaining what was wrong; read it and propose a corrected version addressing that specific objection. Omit proposalId to list every proposal and its status.",
       inputSchema: {
@@ -608,6 +623,7 @@ export function buildTools(): ToolSpec[] {
     },
     {
       name: 'pin_insight',
+      effect: 'writes-now',
       description:
         'Leave a short finding on the operator\'s dashboard. Unlike routing and budget changes this applies immediately and needs no approval, because it only adds a note — nothing is spent and nothing is routed differently. Use it to record a trade-off the operator has to decide, or a conclusion worth keeping after the conversation ends.',
       inputSchema: {

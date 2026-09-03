@@ -34,6 +34,9 @@ export function projectClass(
   let worstCase = 0;
   let failAll = 1;
 
+  let tailRisk = 0;
+  let link = 0;
+
   for (const id of chain) {
     const m = models.get(id);
     if (!m) continue;
@@ -41,7 +44,13 @@ export function projectClass(
     const p50 = m.measured?.medianLatencyMs ?? 0;
     const p95 = m.measured?.p95LatencyMs ?? 0;
     expectedLatency += reach * p50;
-    if (reach > 0.05) worstCase += p95;
+    // Worst case means worst case: if the primary fails you pay its latency
+    // AND the fallback's. Summing the whole chain unconditionally, with the
+    // probability of getting past the primary reported separately, so the
+    // number never understates the tail and the reader can weigh it.
+    worstCase += p95;
+    if (link === 0) tailRisk = 1 - successRate(m);
+    link += 1;
     const s = successRate(m);
     failAll *= 1 - s;
     reach *= 1 - s;
@@ -59,6 +68,7 @@ export function projectClass(
     costPerDeliveredUsd: deliveredRate > 0 ? costPerCall / deliveredRate : Infinity,
     expectedLatencyMs: Math.round(expectedLatency),
     worstCaseLatencyMs: Math.round(worstCase),
+    tailRiskProbability: tailRisk,
     deliveredPerMonth,
   };
 }

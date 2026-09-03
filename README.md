@@ -31,7 +31,22 @@ Claude had no way to reach. That was not a formality. It found two real defects:
    had no way back to a clean slate. In Chrome it worked perfectly, so no amount
    of local testing would have caught it. Now an in-page dialog, with the e2e
    suite stubbing `confirm`/`alert`/`prompt` to throw so it cannot regress.
-2. **A scripted demo target was arithmetically impossible.** Asked for a policy
+2. **`worstCaseLatencyMs` did not report the worst case.** The description said
+   it summed p95 across the chain; the code applied an undocumented
+   "only if this link is reached more than 5% of the time" threshold. So a
+   realtime chain that can take 7811ms reported 3624ms and read as compliant.
+   It now sums the whole chain unconditionally and reports
+   `tailRiskProbability` beside it, and the interaction between the two latency
+   rules is spelled out: an over-ceiling *fallback* is a warning, not a
+   blocker, but the chain's summed tail raises `CHAIN_LATENCY` regardless.
+3. **`withdraw_proposal` claimed the proposal was "removed from the operator's
+   queue"** when it stays visible as withdrawn history. The return text now
+   says what actually happens.
+4. **The agent console labelled every write as needing approval,** including
+   `pin_insight` and `withdraw_proposal`, which apply immediately. Tools now
+   carry an explicit effect — `read`, `writes-now`, or `proposal` — and only
+   the two `propose_*` tools claim to need a human.
+5. **A scripted demo target was arithmetically impossible.** Asked for a policy
    under $20/mo, the agent worked out that the compliant floor is $22.84 —
    realtime has exactly one eligible model at $9.39, the cheapest compliant
    batch model is $11.02, the customer-data class adds $2.43 — and said so with

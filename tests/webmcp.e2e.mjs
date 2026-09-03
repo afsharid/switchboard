@@ -114,6 +114,32 @@ ok('governance filter excludes undocumented models', await (async () => {
   return l.models.every((m) => m.trainsOnData === false);
 })());
 
+section('latency is reported honestly');
+// "worst case" has to mean worst case. An undocumented reach>0.05 threshold
+// used to drop a fallback out of the sum whenever the primary was reliable,
+// so a chain that can take 7.8s reported 3.6s and read as compliant.
+const chainSim = JSON.parse(await callTool('simulate_policy', {
+  label: 'realtime with a degraded fallback',
+  rules: [{ classId: 'realtime', primaryModelId: 'opencode-go/gpt-5.6-luna', fallbackModelIds: ['opencode-go/minimax-m3'] }],
+}));
+const rt = chainSim.after.perClass.find((c) => c.classId === 'realtime');
+ok(`worst case sums the whole chain (${rt.worstCaseLatencyMs}ms)`, rt.worstCaseLatencyMs === 7811);
+ok(`the chance of reaching the tail is reported (${rt.tailRiskProbabilityPct}%)`,
+  rt.tailRiskProbabilityPct > 0 && rt.tailRiskProbabilityPct < 5);
+ok('an over-ceiling fallback warns rather than blocks',
+  chainSim.candidateBlockers.every((x) => !/LATENCY/.test(x))
+  && chainSim.candidateWarnings.some((x) => /^LATENCY/.test(x))
+  && chainSim.candidateWarnings.some((x) => /CHAIN_LATENCY/.test(x)));
+
+section('tools describe their own blast radius accurately');
+const labels = await page.evaluate(() =>
+  [...document.querySelectorAll('select option')].map((o) => o.textContent.trim()));
+ok('only propose_* claims to need approval',
+  labels.filter((l) => /needs your approval/.test(l)).every((l) => /^propose_/.test(l)));
+ok('pin_insight and withdraw_proposal say they apply immediately',
+  labels.some((l) => /^pin_insight\s+· applies immediately/.test(l))
+  && labels.some((l) => /^withdraw_proposal\s+· applies immediately/.test(l)));
+
 section('bad input is corrected, not thrown');
 ok('unknown classId lists the valid ones',
   /Valid: realtime, batch, sensitive/.test(await callTool('compare_models', { classId: 'nope' })));
@@ -191,7 +217,13 @@ section('withdrawal');
 const pending = await callTool('propose_budget_change',
   { scope: 'provider', providerId: 'opencode-go', monthlyBudgetUsd: 25, rationale: 'Trimming the gateway cap a little.' });
 const pendingId = pending.match(/P-\d+/)?.[0];
-ok('a pending proposal can be withdrawn', /withdrawn/.test(await callTool('withdraw_proposal', { proposalId: pendingId })));
+const withdrawMsg = await callTool('withdraw_proposal', { proposalId: pendingId });
+ok('a pending proposal can be withdrawn', /withdrawn/.test(withdrawMsg));
+ok('the wording matches what the UI actually does — the record stays',
+  /history|stays visible/.test(withdrawMsg) && !/removed from/.test(withdrawMsg));
+await new Promise((r) => setTimeout(r, 500));
+ok('and it is still visible to the human, marked withdrawn',
+  await page.evaluate(() => /withdrawn/.test(document.body.innerText)));
 ok('withdrawing twice is refused', /already withdrawn/.test(await callTool('withdraw_proposal', { proposalId: pendingId })));
 
 section('reset works without any native dialog');

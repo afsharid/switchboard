@@ -210,10 +210,10 @@ Two coding agents, used for different reasons. **Claude Opus 5** wrote the app,
 the domain logic and the test suite and verified it in Chrome Canary.
 **ChatGPT / Codex** drove the deployed page through ChatGPT's own in-app browser
 — the browser this is judged in, and the one Claude could not reach — and found
-two defects that local testing could not surface: `window.confirm` is never
-shown in that browser, so "Reset demo" was silently dead there; and a scripted
-demo target was arithmetically impossible, which the agent proved with the
-numbers rather than quietly proposing something non-compliant.
+five defects local testing could not surface — including that `window.confirm`
+is never shown in that browser, so "Reset demo" was silently dead there, and
+that `worstCaseLatencyMs` was quietly applying an undocumented threshold that
+made a 7.8-second chain report 3.6 seconds and read as compliant.
 
 Every design decision was mine. The README documents which agent contributed
 what, and the commit history records it.

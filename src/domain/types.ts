@@ -73,7 +73,10 @@ export type ClassProjection = {
   deliveredRate: number;
   costPerDeliveredUsd: number;
   expectedLatencyMs: number;
+  /** sum of p95 across the whole chain — what you pay if every link but the last fails */
   worstCaseLatencyMs: number;
+  /** probability the primary fails and a fallback is attempted at all */
+  tailRiskProbability: number;
   deliveredPerMonth: number;
 };
 
