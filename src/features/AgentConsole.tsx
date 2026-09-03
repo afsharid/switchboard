@@ -143,7 +143,7 @@ export function AgentConsole({ specs, status }: { specs: ToolSpec[]; status: Too
       </button>
 
       {output !== null && (
-        <pre className="mt-3 max-h-64 overflow-auto rounded p-2 text-[10px] leading-tight"
+        <pre className="mt-3 max-h-64 overflow-auto rounded p-2 text-[10px] leading-tight whitespace-pre-wrap break-words"
           style={{ background: 'var(--surface-2)', color: 'var(--ink-2)' }}>
 {output}
         </pre>

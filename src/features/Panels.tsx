@@ -439,7 +439,51 @@ export function ModelsPanel() {
     >
       <CostLatencyScatter models={models} highlightIds={routed} />
 
-      <div className="mt-4 -mx-1 overflow-x-auto">
+      {/* Below md the table would need 640px in a ~390px column. It did
+          scroll horizontally, but with no scrollbar affordance in a narrow
+          panel nobody discovers that — the first person to open this in
+          ChatGPT's 447px side browser reported the right-hand columns as
+          simply clipped. Same data, one block per model, no scrolling. */}
+      <ul className="mt-4 space-y-2 md:hidden">
+        {rows.map((m: Model) => (
+          <li key={m.id} className="rounded-lg p-2.5" style={{ background: 'var(--surface-2)' }}>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className={`text-xs ${routed.includes(m.id) ? 'font-semibold' : 'font-medium'}`}>
+                {m.displayName}
+              </span>
+              {routed.includes(m.id) && <Badge tone="info" title="routed by the live policy">routed</Badge>}
+            </div>
+            <div className="mt-1 text-[11px] tnum" style={{ color: 'var(--ink-2)' }}>
+              ${m.inputUsdPerM.toFixed(2)} in / ${m.outputUsdPerM.toFixed(2)} out per Mtok
+            </div>
+            <div className="mt-0.5 flex flex-wrap gap-x-3 text-[11px] tnum" style={{ color: 'var(--ink-muted)' }}>
+              {m.measured ? (
+                <>
+                  <span>{pct(m.measured.requestSuccessRate)} success</span>
+                  {m.measured.p95LatencyMs > 0 && <span>p95 {ms(m.measured.p95LatencyMs)}</span>}
+                  {m.measured.costPer1kSuccessfulUsd
+                    ? <span>{usd(m.measured.costPer1kSuccessfulUsd)} per 1k delivered</span>
+                    : null}
+                </>
+              ) : (
+                <span>no measurements</span>
+              )}
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {m.measured?.meetsQualityGates && <Badge tone="good">✓ gates</Badge>}
+              {m.measured && m.measured.requestSuccessRate === 0 && <Badge tone="critical">✕ unavailable</Badge>}
+              {!m.measured && <Badge>unmeasured</Badge>}
+              {m.dataRetentionDays === 0 && <Badge tone="info">0d retention</Badge>}
+              {m.dataRetentionDays !== null && m.dataRetentionDays > 0 && (
+                <Badge tone="warning">⚠ {m.dataRetentionDays}d retention</Badge>
+              )}
+              {m.trainsOnData === true && <Badge tone="critical">⚠ trains on data</Badge>}
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4 -mx-1 hidden overflow-x-auto md:block">
         <table className="w-full min-w-[640px] text-left text-[11px]">
           <thead style={{ color: 'var(--ink-muted)' }}>
             <tr className="border-b" style={{ borderColor: 'var(--hairline)' }}>
@@ -529,11 +573,11 @@ export function ActivityPanel() {
             </button>
             {open === a.id && (
               <div className="mb-1 ml-4 space-y-1">
-                <pre className="overflow-x-auto rounded p-2 text-[10px] leading-tight"
+                <pre className="rounded p-2 text-[10px] leading-tight whitespace-pre-wrap break-words"
                   style={{ background: 'var(--surface-2)', color: 'var(--ink-muted)' }}>
 {JSON.stringify(a.args, null, 2)}
                 </pre>
-                <pre className="max-h-40 overflow-auto rounded p-2 text-[10px] leading-tight"
+                <pre className="max-h-40 overflow-auto rounded p-2 text-[10px] leading-tight whitespace-pre-wrap break-words"
                   style={{ background: 'var(--surface-2)', color: 'var(--ink-2)' }}>
 {a.result}
                 </pre>

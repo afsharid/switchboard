@@ -288,6 +288,34 @@ await new Promise((r) => setTimeout(r, 500));
 const feed = await page.evaluate(() => document.body.innerText);
 ok('a tool call appears in the feed with its timing', /find_waste/.test(feed) && /ms/.test(feed));
 
+section('the 447px judging viewport');
+// ChatGPT's in-app browser is a side panel: the first person to open this page
+// in it reported a viewport of 447px, which makes narrow width the PRIMARY
+// judging viewport rather than an edge case. The model table needed 640px and,
+// with no scrollbar affordance in a panel that size, read as clipped.
+for (const width of [390, 447, 768, 1440]) {
+  await page.setViewport({ width, height: 900 });
+  await new Promise((r) => setTimeout(r, 700));
+  const m = await page.evaluate(() => {
+    const de = document.documentElement;
+    const scrollers = [...document.querySelectorAll('*')].filter((e) => {
+      const cs = getComputedStyle(e);
+      return /auto|scroll/.test(cs.overflowX) && e.scrollWidth > e.clientWidth + 2;
+    });
+    const tbl = document.querySelector('table');
+    return {
+      pageOverflow: de.scrollWidth - de.clientWidth,
+      tableShown: tbl ? tbl.offsetParent !== null : false,
+      hScrollerCount: scrollers.length,
+    };
+  });
+  ok(`${width}px: no page overflow (${m.pageOverflow}px)`, m.pageOverflow === 0);
+  ok(`${width}px: nothing scrolls sideways (${m.hScrollerCount})`, m.hScrollerCount === 0);
+  ok(`${width}px: ${width < 768 ? 'cards' : 'table'} shown`, m.tableShown === (width >= 768));
+}
+await page.setViewport({ width: 1440, height: 1600 });
+await new Promise((r) => setTimeout(r, 500));
+
 section('runtime');
 ok(`no uncaught errors (${runtimeErrors.length})`, runtimeErrors.length === 0);
 if (runtimeErrors.length) console.log(runtimeErrors.slice(0, 5).join('\n'));

@@ -198,7 +198,7 @@ empty ranking and the refusal text, and did not route it.
 
 `tests/webmcp.e2e.mjs` in the repo drives a real Chrome through the genuine
 `document.modelContext` API and clicks the human half of the approval loop.
-**49 checks, all passing** — including that the agent's budget change leaves the
+**61 checks, all passing** — including that the agent's budget change leaves the
 cap *verifiably* unchanged, that a rejection note is read back verbatim, that
 undocumented governance metadata blocks a constrained class, and that there are
 no uncaught runtime errors. Run it against the live URL with
@@ -222,6 +222,13 @@ numbers in my own docs, a hole where unmeasured models silently passed every
 performance constraint, a documented-vs-actual mismatch in how success rates
 were judged, a 292px overflow on a 390px phone, and status badges below WCAG AA.
 All fixed; its report is committed at `docs/audit-antigravity.md`.
+
+And a fourth pass in ChatGPT's in-app browser turned up the most useful fact of
+all: that browser is a **side panel 447px wide**, so narrow width is the primary
+judging viewport rather than an edge case. The model catalogue needed 640px and,
+with no scrollbar affordance at that size, its right-hand columns read as
+clipped. It now renders as one block per model below 768px, and all four of
+390/447/768/1440px are asserted to have zero overflow.
 
 Every design decision was mine. The README documents which agent contributed
 what, and the commit history records it. Using three different model families

@@ -76,6 +76,14 @@ is airtight — no tool reaches `applyRulesDirect`, `setProviderBudgetDirect`,
   The chain check now uses the class floor as a blocker, and a below-floor
   *fallback* softens to a warning like latency and quality gates already did —
   that inconsistency was an oversight, not a decision.
+- **The primary judging viewport turned out to be 447px.** ChatGPT's in-app
+  browser is a side panel, and the first person to open the page in it reported
+  that width. The model table needed 640px; it *did* scroll horizontally, but
+  with no scrollbar affordance in a panel that narrow nobody discovers that, so
+  the right-hand columns read as simply clipped. Below `md` the catalogue is now
+  one block per model — same data, no scrolling. All four of 390/447/768/1440px
+  are asserted in the test suite to have zero page overflow and nothing
+  scrolling sideways.
 - **A 292px horizontal overflow on a 390px phone.** Grid items default to
   `min-width: auto`, so the 640px model table stretched the whole page. Fixed
   with `min-w-0`; also bumped form controls to 16px and 36px tall below 640px,
@@ -314,7 +322,7 @@ the cost/latency scatter is carried by two validated hues **plus** marker shape
 `document.modelContext` API — registration, `getTools()`, `executeTool()` — so
 the host round trip is covered rather than the handlers being called directly.
 It also clicks the human half of the approval loop, because the guard is only
-real if that half works. 49 checks, including:
+real if that half works. 61 checks, including:
 
 - the agent cannot mutate a budget or a policy, and the cap is *verified*
   unchanged after it tries
