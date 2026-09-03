@@ -130,9 +130,23 @@ export function BeforeAfterBars({ data }: {
             contentStyle={tipStyle} cursor={{ fill: 'rgba(255,255,255,0.04)' }}
             formatter={(v, n) => [usd(Number(v ?? 0)), n === 'before' ? 'live policy' : 'candidate']}
           />
-          <Legend verticalAlign="top" align="left" height={24}
-            wrapperStyle={{ fontSize: 11, color: INK2 }} iconSize={8}
-            formatter={(v) => (v === 'before' ? 'live policy' : 'candidate')} />
+          {/* Recharts does not preserve declaration order here either, and it
+              rendered "candidate" ahead of the blue "live policy" bars. */}
+          <Legend
+            verticalAlign="top" align="left" height={24}
+            content={() => (
+              <ul className="flex gap-4 text-[11px]" style={{ color: INK2, listStyle: 'none', margin: 0, padding: 0 }}>
+                <li className="flex items-center gap-1.5">
+                  <span style={{ width: 9, height: 9, borderRadius: 2, background: S1, display: 'inline-block' }} />
+                  live policy
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span style={{ width: 9, height: 9, borderRadius: 2, background: S2, display: 'inline-block' }} />
+                  candidate
+                </li>
+              </ul>
+            )}
+          />
           <Bar dataKey="before" fill={S1} radius={[4, 4, 0, 0]} maxBarSize={28} />
           <Bar dataKey="after" fill={S2} radius={[4, 4, 0, 0]} maxBarSize={28} />
         </BarChart>
