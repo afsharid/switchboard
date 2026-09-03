@@ -69,7 +69,7 @@ This is not a mock dataset.
   transcribed from published provider and gateway documentation, with the
   retrieval date recorded.
 - **Latency, success rates, token means and cost-per-1000-successful-outputs**
-  are my own measurements from **4 live evaluation runs on 2026-08-20 covering
+  are my own measurements from **4 valid live evaluation runs on 2026-08-20 covering
   667 real API calls** across 19 gateway models on one structured-output task.
 - `scripts/extract-seed.ts` derives `src/data/seed.json` from those runs behind
   a strict field allowlist and a secret scan. Prompts, fixture ids, response
@@ -125,7 +125,7 @@ VOLTWISE_ROOT=/path/to/eval/repo npm run seed
 **In Chrome** — enable `chrome://flags/#enable-webmcp-testing`, reload, then:
 
 ```js
-await document.modelContext.getTools()   // 13 tools with their schemas
+await document.modelContext.getTools()   // 14 tools with their schemas
 ```
 
 **Without any WebMCP client** — the built-in **Agent console** panel lists the
@@ -150,7 +150,7 @@ src/
   data/          seed.json (generated, committed) + operator-declared initial state
   domain/        cost projection, compliance evaluation, waste detectors — all pure
   store/         zustand store; the only place state mutates
-  webmcp/        shim, registration hook, and the 13 tool definitions
+  webmcp/        shim, registration hook, and the 14 tool definitions
   features/      dashboard panels + agent console
   ui/            design tokens, primitives, charts
 ```

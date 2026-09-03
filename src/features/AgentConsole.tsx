@@ -69,7 +69,11 @@ export function AgentConsole({ specs, status }: { specs: ToolSpec[]; status: Too
       subtitle="Invoke any tool by hand, exactly as an agent would."
       right={
         status.supported
-          ? <Badge tone="good" title={status.surface}>✓ {status.registered.length} tools live</Badge>
+          ? (
+            <Badge tone={status.registering ? 'info' : 'good'} title={status.surface}>
+              {status.registering ? `registering ${status.registered.length}/${status.total}…` : `✓ ${status.registered.length} tools live`}
+            </Badge>
+          )
           : <Badge tone="warning">⚠ no WebMCP host</Badge>
       }
     >
@@ -80,7 +84,7 @@ export function AgentConsole({ specs, status }: { specs: ToolSpec[]; status: Too
         </div>
         <div className="flex justify-between gap-2">
           <dt style={{ color: 'var(--ink-muted)' }}>registered by this page</dt>
-          <dd className="tnum">{status.registered.length}</dd>
+          <dd className="tnum">{status.registered.length}/{status.total}</dd>
         </div>
         <div className="flex justify-between gap-2">
           <dt style={{ color: 'var(--ink-muted)' }}>reported by getTools()</dt>

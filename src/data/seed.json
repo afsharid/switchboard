@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-03T06:55:56.815Z",
+  "generatedAt": "2026-09-03T07:16:04.899Z",
   "provenance": {
-    "summary": "Prices and governance metadata are transcribed from published provider/gateway documentation. Latency, success rates, token means and cost-per-successful-output are the author’s own measurements from 5 live evaluation runs on 2026-08-20 covering 636 real API calls.",
+    "summary": "Prices and governance metadata are transcribed from published provider/gateway documentation. Latency, success rates, token means and cost-per-successful-output are the author’s own measurements from 4 valid live evaluation runs on 2026-08-20 covering 667 real API calls.",
     "measurementDate": "2026-08-20",
     "caveat": "Usage-value estimates for planning, not production billing. Measured on one structured-output task; treat as indicative, not a general capability benchmark.",
     "runs": 4,

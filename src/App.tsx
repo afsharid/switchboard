@@ -50,7 +50,13 @@ export function App() {
         </div>
         <div className="flex items-center gap-2">
           {status.supported
-            ? <Badge tone="good" title={status.surface}>✓ agent-ready · {status.registered.length} tools</Badge>
+            ? (
+              <Badge tone={status.registering ? 'info' : 'good'} title={status.surface}>
+                {status.registering
+                  ? `registering ${status.registered.length}/${status.total} tools…`
+                  : `✓ agent-ready · ${status.registered.length} tools`}
+              </Badge>
+            )
             : <Badge tone="warning" title="Open in ChatGPT's in-app browser or Chrome with WebMCP enabled">⚠ no WebMCP host</Badge>}
           {pending > 0 && <Badge tone="warning">{pending} awaiting approval</Badge>}
           <button

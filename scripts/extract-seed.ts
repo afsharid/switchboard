@@ -156,17 +156,20 @@ async function main() {
     }
   }
 
+  const runCount = evalRuns.length;
+  const callCount = evalRuns.reduce((a, r) => a + (r.actualTotalNetworkCalls ?? 0), 0);
+
   const out = {
     schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     provenance: {
       summary:
-        'Prices and governance metadata are transcribed from published provider/gateway documentation. Latency, success rates, token means and cost-per-successful-output are the author’s own measurements from 5 live evaluation runs on 2026-08-20 covering 636 real API calls.',
+        `Prices and governance metadata are transcribed from published provider/gateway documentation. Latency, success rates, token means and cost-per-successful-output are the author’s own measurements from ${runCount} valid live evaluation runs on 2026-08-20 covering ${callCount} real API calls.`,
       measurementDate: '2026-08-20',
       caveat:
         'Usage-value estimates for planning, not production billing. Measured on one structured-output task; treat as indicative, not a general capability benchmark.',
-      runs: evalRuns.length,
-      totalMeasuredCalls: evalRuns.reduce((a, r) => a + (r.actualTotalNetworkCalls ?? 0), 0),
+      runs: runCount,
+      totalMeasuredCalls: callCount,
       totalMeasuredCostUsd: Number(
         evalRuns.reduce((a, r) => a + (r.estimatedTotalCostUsd ?? 0), 0).toFixed(6),
       ),
