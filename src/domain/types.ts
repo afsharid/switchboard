@@ -93,6 +93,8 @@ export type Violation = {
 
 export type WasteFinding = {
   code: string;
+  /** spend = money is being wasted now; risk = a fragility; hygiene = a data gap */
+  kind: 'spend' | 'risk' | 'hygiene';
   title: string;
   detail: string;
   estimatedMonthlySavingsUsd: number | null;
@@ -106,12 +108,13 @@ export type Proposal = {
   kind: ProposalKind;
   createdAt: string;
   rationale: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'withdrawn';
   decidedAt: string | null;
   decisionNote: string | null;
   /** policy proposals */
   rules: Rule[] | null;
   /** budget proposals */
+  scope: 'provider' | 'total' | null;
   providerId: string | null;
   monthlyBudgetUsd: number | null;
   projectionBefore: Projection | null;

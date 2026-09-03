@@ -55,7 +55,7 @@ export function CostLatencyScatter({ models, highlightIds }: { models: Model[]; 
             <CartesianGrid strokeDasharray="0" vertical={false} />
             <XAxis
               type="number" dataKey="x" scale="log" domain={['auto', 'auto']}
-              tickFormatter={(v: number) => `$${v < 1 ? v.toFixed(2) : v.toFixed(1)}`}
+              tickFormatter={(v: number) => `$${v.toFixed(2)}`}
               label={{ value: 'cost per 1k delivered outputs (log)', position: 'insideBottom', offset: -18, fill: MUTED, fontSize: 11 }}
             />
             <YAxis
@@ -72,14 +72,30 @@ export function CostLatencyScatter({ models, highlightIds }: { models: Model[]; 
               ]}
               labelFormatter={() => ''}
             />
-            <Legend verticalAlign="top" align="left" height={24}
-              wrapperStyle={{ fontSize: 11, color: INK2 }} iconSize={8} />
-            <Scatter name="passes quality gates" data={passes} fill={S1} shape="circle">
+            {/* Fixed order, and each swatch is the mark's own shape, so identity
+                never rests on hue alone. Recharts' auto legend renders dots for
+                every series and does not preserve declaration order here. */}
+            <Legend
+              verticalAlign="top" align="left" height={24}
+              content={() => (
+                <ul className="flex gap-4 text-[11px]" style={{ color: INK2, listStyle: 'none', margin: 0, padding: 0 }}>
+                  <li className="flex items-center gap-1.5">
+                    <svg width="10" height="10" aria-hidden><circle cx="5" cy="5" r="4.5" fill={S1} /></svg>
+                    passes quality gates ({passes.length})
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <svg width="10" height="10" aria-hidden><polygon points="5,0.5 9.5,9.5 0.5,9.5" fill={S2} /></svg>
+                    fails quality gates ({fails.length})
+                  </li>
+                </ul>
+              )}
+            />
+            <Scatter name="passes quality gates" data={passes} fill={S1} shape="circle" legendType="circle">
               {passes.map((p) => (
                 <Cell key={p.id} fill={S1} stroke={SURFACE} strokeWidth={2} />
               ))}
             </Scatter>
-            <Scatter name="fails quality gates" data={fails} fill={S2} shape="triangle">
+            <Scatter name="fails quality gates" data={fails} fill={S2} shape="triangle" legendType="triangle">
               {fails.map((p) => (
                 <Cell key={p.id} fill={p.routed ? S2 : 'transparent'} stroke={S2} strokeWidth={2} />
               ))}

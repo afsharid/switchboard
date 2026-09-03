@@ -81,14 +81,14 @@ The agent surfaces the trade-off and stops. That refusal is the feature.
 
 ## WebMCP implementation
 
-**14 tools, split by blast radius:**
+**15 tools, split by blast radius:**
 
 | | Tools |
 |---|---|
 | **Read-only** (`readOnlyHint: true`) | `get_provenance`, `list_providers`, `list_traffic_classes`, `list_models`, `get_model`, `compare_models`, `get_routing_policy`, `simulate_policy`, `check_compliance`, `find_waste` |
-| **Guarded** — create a proposal, mutate nothing | `propose_policy_change`, `propose_budget_change` |
+| **Guarded** — create a proposal, mutate nothing | `propose_policy_change`, `propose_budget_change` (provider cap or total cap) |
 | **Unguarded write** — applies immediately, spends nothing | `pin_insight` |
-| **Poll** | `get_proposal_status` |
+| **Poll / retract** | `get_proposal_status`, `withdraw_proposal` |
 
 Registration uses the imperative API, resolved from **`document.modelContext`**
 with a fallback to `navigator.modelContext` for hosts still on the
@@ -99,7 +99,21 @@ invalid input returns a corrective string naming the valid values instead of
 throwing.
 
 `get_provenance` exists specifically so an agent can state the limits of the
-evidence it is reasoning from before it recommends anything.
+evidence it is reasoning from before it recommends anything — including a
+`samplingCaveat` warning that per-model sample sizes are small (median 33 calls)
+and that p95 should be treated as coarse.
+
+Three semantics the surface is deliberate about, because an agent reading tool
+descriptions has no other way to know:
+
+- **Governance constraints never degrade.** Quality-gate and latency limits
+  soften to warnings on a *fallback*; retention and no-training limits do not.
+- **Undocumented is not safe.** `null` governance metadata blocks a constrained
+  class rather than being assumed compliant. And `null` means *unconstrained* on
+  a class but *undocumented* on a model — opposite polarity across the join, so
+  the descriptions say so explicitly.
+- **Spend is audited with everything else,** so an empty blocker list really is
+  the bar a proposal has to clear.
 
 There is also an **Agent console** in the UI: it lists the registered tools,
 shows what `modelContext.getTools()` reports back, and lets anyone invoke any

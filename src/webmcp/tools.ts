@@ -85,11 +85,17 @@ export function buildTools(): ToolSpec[] {
       name: 'get_provenance',
       readOnly: true,
       description:
-        'Explain where the numbers on this dashboard come from and what they may not be used for. Call this first if you intend to make a recommendation, so you can state the limits of the evidence you are reasoning from. Returns the measurement date, how many live runs and API calls the measurements cover, and the explicit caveat that these are planning estimates rather than production billing.',
+        'Explain where the numbers on this dashboard come from and how far they can be trusted. Call this before making a recommendation so you can state the limits of your evidence. Returns the measurement date, the run and call counts, and per-model sample sizes. Read samplingCaveat: the measurements are spread across a whole catalogue on a single structured-output task, so per-model sample counts are small — treat medianLatencyMs as indicative and p95LatencyMs as coarse, and say so when a recommendation turns on a latency margin of a second or less. Every field here is prose and counts for you to paraphrase, not a machine-readable prohibition list.',
       inputSchema: { type: 'object', properties: {} },
       execute: () =>
         JSON.stringify({
           ...seed.provenance,
+          samplingCaveat:
+            'Per-model sample sizes are small: see observedCalls on each model via list_models. A p95 computed from tens of calls is coarse. Do not present latency differences smaller than roughly a second as decisive, and prefer requestSuccessRate and cost, which are less sensitive to sample size.',
+          medianObservedCallsPerMeasuredModel: (() => {
+            const xs = get().models.map((m) => m.measured?.observedCalls ?? 0).filter((n) => n > 0).sort((a, b) => a - b);
+            return xs.length ? xs[Math.floor(xs.length / 2)] ?? 0 : 0;
+          })(),
           modelsInCatalogue: get().models.length,
           modelsWithMeasurements: get().models.filter((m) => m.measured).length,
           evalRuns: seed.evalRuns.map((r) => ({
@@ -102,7 +108,7 @@ export function buildTools(): ToolSpec[] {
       name: 'list_providers',
       readOnly: true,
       description:
-        'List every LLM provider configured here with its operator-declared monthly budget in USD and its projected monthly spend under the routing policy currently in force. Use this to see which providers are over budget before you propose any change. Projected spend is derived from declared call volumes and published prices, not from a billing API.',
+        "List every LLM provider with its monthly budget cap in USD and its projected monthly spend under the policy currently in force, plus the total cap across all providers. Provider ids are kebab-case, e.g. 'opencode-go', 'openai'. Caps are NOT writable by you — there is no set_budget tool; use propose_budget_change, which the operator must approve. Projected spend is derived from operator-declared call volumes and published prices, not from a billing API: there is no billing history, actuals or time series anywhere on this surface, so never describe these figures as what was spent.",
       inputSchema: { type: 'object', properties: {} },
       execute: () => {
         const s = get();
@@ -127,7 +133,7 @@ export function buildTools(): ToolSpec[] {
       name: 'list_traffic_classes',
       readOnly: true,
       description:
-        'List the traffic classes this workload is split into, with the constraints each one must satisfy. Read this before proposing any routing change — the constraints are the whole point, and several are not about money. Each class returns: monthlyCalls and average token counts (declared by the operator), plus constraints maxP95Ms, minSuccessRate, requireQualityGates, maxDataRetentionDays (data-governance limit in days, null = unconstrained), allowTrainingOnData (false means never route to a model that trains on submitted data) and requireMeasured (refuse models with no measurements).',
+        "List the traffic classes this workload is split into, with the constraints each must satisfy, and how many models are currently eligible for each. Read this before proposing any routing change — the constraints are the whole point and several are not about money. Per class: monthlyCalls and average token counts, which are OPERATOR-DECLARED estimates and not measured (you cannot change them; only the human can, in the UI). Then the constraints: maxP95Ms, minSuccessRate (judged against the chain-level delivery rate, not one model's success rate), requireQualityGates, maxDataRetentionDays (null here means UNCONSTRAINED — the opposite of null on a model, where it means undocumented and therefore not clearable), allowTrainingOnData (false means never route to a model that trains on submitted data, in any chain position, including fallbacks), requireMeasured. You cannot write these constraints either: if the operator states a tighter requirement in conversation, it will not persist, so record it with pin_insight and say that it is not enforced.",
       inputSchema: { type: 'object', properties: {} },
       execute: () => {
         const s = get();
@@ -143,15 +149,18 @@ export function buildTools(): ToolSpec[] {
       name: 'list_models',
       readOnly: true,
       description:
-        "List the priced model catalogue joined with this operator's own measurements. Prices are per million tokens from published provider documentation. Measurements come from 4 live evaluation runs over 667 real API calls on one structured-output task: requestSuccessRate (0-1), medianLatencyMs, p95LatencyMs, costPer1kSuccessfulUsd (cost per 1000 successful outputs — prefer this over raw price, because a cheap model that fails half its calls is not cheap), and meetsQualityGates. Governance fields dataRetentionDays and trainsOnData carry null when the provider does not document them; null means unknown, not safe. Filter to narrow the candidate set before comparing.",
+        "List the priced model catalogue joined with this operator's own measurements. Prices are per million tokens from published provider documentation. Call get_provenance for how the measurements were produced and how coarse they are. Per model: requestSuccessRate (0-1), medianLatencyMs, p95LatencyMs, observedCalls (the sample size behind those latencies — check it before trusting a small latency gap), costPer1kSuccessfulUsd (cost per 1000 DELIVERED outputs, i.e. price divided by success rate; prefer it over raw price, because a cheap model that fails half its calls is not cheap), and meetsQualityGates. GOVERNANCE, and read this carefully: on a MODEL, dataRetentionDays and trainsOnData are null when the provider does not document them, and null means UNKNOWN, which is not the same as safe. On a TRAFFIC CLASS the same-named constraints being null means UNCONSTRAINED. The two nulls are opposites, so do not carry one across the join. Every governance filter here excludes undocumented models rather than assuming the best. If you only need a set of models that is legal for a class, pass eligibleForClassId and skip the individual filters — it applies the class's real constraints, including the ones these filters cannot express.",
       inputSchema: {
         type: 'object',
         properties: {
           providerId: { type: 'string', description: "Restrict to one provider, e.g. 'opencode-go'." },
           measuredOnly: { type: 'boolean', description: 'Only models with measurements. Default false.' },
-          excludeDead: { type: 'boolean', description: 'Drop models whose measured success rate is 0. Default false.' },
+          excludeDead: { type: 'boolean', description: 'Drop models that returned zero successful calls in every run. Unmeasured models are kept — use measuredOnly to drop those. Default false.' },
           maxDataRetentionDays: { type: 'number', description: 'Only models documented to retain data for at most this many days. Models with undocumented retention are excluded.' },
-          excludeTrainsOnData: { type: 'boolean', description: 'Drop models documented to train on submitted data. Default false.' },
+          excludeTrainsOnData: { type: 'boolean', description: 'Drop models that train on submitted data AND models where this is undocumented, since undocumented is not safe. Default false.' },
+          minSuccessRate: { type: 'number', description: 'Only models with a measured request success rate at or above this (0-1). Excludes unmeasured models.' },
+          maxCostPer1kDeliveredUsd: { type: 'number', description: 'Only models at or below this cost per 1000 delivered outputs, in USD. Excludes unmeasured models.' },
+          limit: { type: 'number', description: 'Cap the number of models returned, cheapest per delivered output first. Omit for all matches.' },
           maxP95Ms: { type: 'number', description: 'Only models with measured p95 latency at or below this many milliseconds.' },
           requireQualityGates: { type: 'boolean', description: 'Only models that passed the quality gates. Default false.' },
           eligibleForClassId: { type: 'string', description: 'Return only models satisfying every constraint of this traffic class. Simplest way to get a legal candidate set.' },
@@ -174,9 +183,24 @@ export function buildTools(): ToolSpec[] {
         if (a.excludeTrainsOnData) ms = ms.filter((m) => m.trainsOnData === false);
         if (typeof a.maxP95Ms === 'number') ms = ms.filter((m) => m.measured && m.measured.p95LatencyMs <= a.maxP95Ms);
         if (a.requireQualityGates) ms = ms.filter((m) => m.measured?.meetsQualityGates === true);
+        if (typeof a.minSuccessRate === 'number') {
+          ms = ms.filter((m) => m.measured && m.measured.requestSuccessRate >= a.minSuccessRate);
+        }
+        if (typeof a.maxCostPer1kDeliveredUsd === 'number') {
+          ms = ms.filter((m) => {
+            const c = m.measured?.costPer1kSuccessfulUsd;
+            return typeof c === 'number' && c > 0 && c <= a.maxCostPer1kDeliveredUsd;
+          });
+        }
+        const matchedCount = ms.length;
+        ms = [...ms].sort(
+          (x, y) => (x.measured?.costPer1kSuccessfulUsd ?? Infinity) - (y.measured?.costPer1kSuccessfulUsd ?? Infinity),
+        );
+        if (typeof a.limit === 'number' && a.limit > 0) ms = ms.slice(0, Math.floor(a.limit));
 
         return JSON.stringify({
-          matched: ms.length,
+          matched: matchedCount,
+          returned: ms.length,
           ofTotal: s.models.length,
           models: ms.map((m) => ({
             id: m.id, displayName: m.displayName, providerId: m.providerId,
@@ -232,7 +256,7 @@ export function buildTools(): ToolSpec[] {
       name: 'compare_models',
       readOnly: true,
       description:
-        "Rank candidate models for one traffic class, using that class's own token profile and declared volume so the money figures are directly comparable. Only models that satisfy every hard constraint of the class are ranked; the rest are returned separately under rejected, with the reason. Set optimiseFor to 'cost' (cheapest per delivered output), 'latency' (lowest measured p95), 'reliability' (highest success rate) or 'balanced' (cost per delivered output, penalised by p95 and by failing quality gates). This is the tool to call before proposing a routing change.",
+        "Rank candidate models for one traffic class, using that class's own token profile and declared volume, so the money figures are comparable to each other and to get_routing_policy. Note this differs from the costPer1kSuccessfulUsd in list_models, which uses the measurement task's own token profile — do not quote the two side by side. Only models satisfying every HARD constraint of the class are ranked; the rest come back under rejected with the blocking codes. Ranking: 'cost' = lowest cost per delivered output; 'latency' = lowest measured p95; 'reliability' = highest success rate; 'balanced' (default) = costPerDelivered × (1 + p95ms/10000) × 1.5 if it fails quality gates. Fallbacks: performance constraints (quality gates, latency) soften to warnings for a fallback because a slow answer beats none, but governance constraints (retention, training) never soften — so a model rejected on RETENTION or TRAINING cannot serve this class in any position. Call this before proposing a routing change.",
       inputSchema: {
         type: 'object',
         properties: {
@@ -321,7 +345,7 @@ export function buildTools(): ToolSpec[] {
       name: 'simulate_policy',
       readOnly: true,
       description:
-        'Project what a candidate routing policy would cost and deliver, WITHOUT applying it. Returns before/after monthly cost per class and per provider, delivery rates, expected and worst-case latency, and the compliance verdict on the candidate. Also renders the comparison on the operator\'s screen, so they can follow your reasoning while you iterate. Call this repeatedly to search the trade-off space — it is free and changes nothing. Classes you omit from rules keep their current routing.',
+        'Project what a candidate routing policy would cost and deliver, WITHOUT applying it. Classes you omit keep their current routing. Definitions: deliveredRatePct is the chain-level probability that some link succeeds, i.e. 1 minus the product of every link failing — this, not a single model\'s requestSuccessRate, is what a class\'s minSuccessRate is judged against. expectedLatencyMs is the probability-weighted median across the chain. worstCaseLatencyMs is the SUM of p95 across every link likely to be attempted, i.e. the tail once fallbacks are exhausted; judge a latency ceiling against this, not the expected value. Cost counts every attempt, since a failed call is still billed. The candidate\'s compliance verdict is returned here too and is the same computation check_compliance runs, so you do not need both — call check_compliance only when you want to audit the LIVE policy. One side effect: this repaints the projection on the operator\'s screen so they can follow your reasoning, so iterate deliberately rather than sweeping dozens of candidates.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -340,7 +364,7 @@ export function buildTools(): ToolSpec[] {
         for (const r of rules) merged.set(r.classId, r);
         const mergedRules = Array.from(merged.values());
         const violations = checkCompliance(s.classes, { rules: mergedRules, updatedAt: '' }, s.models, {
-          totalMonthlyBudgetUsd: s.totalBudgetUsd,
+          totalMonthlyBudgetUsd: s.totalBudgetUsd, providers: s.providers,
         });
 
         s.setSimulation({
@@ -367,7 +391,7 @@ export function buildTools(): ToolSpec[] {
       name: 'check_compliance',
       readOnly: true,
       description:
-        'Audit the live policy — or a candidate rule set if you pass one — against every constraint: latency ceilings, success-rate floors, quality gates, data-retention limits and the no-training-on-data requirement. Blockers mean the routing is not permissible as configured; warnings mean it is permissible but fragile. An empty blockers list is the bar a proposal should clear before you send it to the operator.',
+        'Audit the live policy — or a candidate rule set if you pass one — against every constraint at once: latency ceilings, success-rate floors, quality gates, data-retention limits, the no-training-on-data requirement, AND the spend caps (TOTAL_BUDGET and PROVIDER_BUDGET blockers when projected spend exceeds a cap). Blockers mean the routing is not permissible as configured; warnings mean permissible but fragile. An empty blockers list is the bar a proposal should clear. Because spend is included, a clean result does mean the plan fits the operator\'s declared budget — but only the budget that is actually recorded, so if they stated a target in conversation, propose it via propose_budget_change first so it becomes auditable. simulate_policy returns this same verdict for a candidate; use this tool for the live policy.',
       inputSchema: { type: 'object', properties: { rules: S.rules } },
       execute: (a) => {
         const s = get();
@@ -380,7 +404,7 @@ export function buildTools(): ToolSpec[] {
           rules = Array.from(merged.values());
         }
         const vs = checkCompliance(s.classes, { rules, updatedAt: '' }, s.models, {
-          totalMonthlyBudgetUsd: s.totalBudgetUsd,
+          totalMonthlyBudgetUsd: s.totalBudgetUsd, providers: s.providers,
         });
         return JSON.stringify({
           target: a.rules === undefined ? 'live policy' : 'candidate rules',
@@ -394,7 +418,7 @@ export function buildTools(): ToolSpec[] {
       name: 'find_waste',
       readOnly: true,
       description:
-        'Run the waste detectors over the live policy and the measurements: models being routed to that never returned a successful call, classes routed to a model more expensive than a compliant alternative, models costing over $1 per 1000 successful outputs while still failing quality gates, catalogue entries with prices but no measurements, and classes with too few or zero eligible models. Every finding cites the numbers it came from. Start here when the operator asks an open question like "where is my money going".',
+        'Lint the live policy against the measurements and report everything wrong with it. Each finding carries a kind: "spend" means money is being wasted right now (a routed model that never succeeds, a class routed to something dearer than a compliant alternative, a model over $1 per 1000 delivered outputs that still fails its gates); "risk" means a fragility rather than a cost (a class with one or zero eligible models); "hygiene" means a data gap (catalogue entries priced but never measured). Only "spend" findings carry estimatedMonthlySavingsUsd — do not present risk or hygiene findings as costs. Every finding cites the numbers behind it. Start here when the operator asks an open question like "where is my money going", but say plainly that these are projections from declared volumes, not billed spend.',
       inputSchema: { type: 'object', properties: {} },
       execute: () => {
         const s = get();
@@ -405,7 +429,7 @@ export function buildTools(): ToolSpec[] {
             findings.reduce((a2, f) => a2 + (f.estimatedMonthlySavingsUsd ?? 0), 0),
           ),
           findings: findings.map((f) => ({
-            code: f.code, title: f.title, detail: f.detail,
+            code: f.code, kind: f.kind, title: f.title, detail: f.detail,
             estimatedMonthlySavingsUsd: f.estimatedMonthlySavingsUsd === null ? null : r2(f.estimatedMonthlySavingsUsd),
             modelIds: f.modelIds,
           })),
@@ -442,13 +466,13 @@ export function buildTools(): ToolSpec[] {
         const merged = new Map(s.policy.rules.map((r) => [r.classId, r]));
         for (const r of rules) merged.set(r.classId, r);
         const vs = checkCompliance(s.classes, { rules: Array.from(merged.values()), updatedAt: '' }, s.models, {
-          totalMonthlyBudgetUsd: s.totalBudgetUsd,
+          totalMonthlyBudgetUsd: s.totalBudgetUsd, providers: s.providers,
         });
         const blockers = vs.filter((v) => v.severity === 'blocker');
 
         const p = s.createProposal({
           kind: 'policy', rationale: a.rationale, rules,
-          providerId: null, monthlyBudgetUsd: null,
+          scope: null, providerId: null, monthlyBudgetUsd: null,
           projectionBefore: before, projectionAfter: after,
         });
         s.setSimulation({
@@ -470,39 +494,87 @@ export function buildTools(): ToolSpec[] {
     {
       name: 'propose_budget_change',
       description:
-        "Ask the operator to change a provider's monthly budget cap. Like routing, this is not applied directly — a budget is a spending authorisation, so only the human can grant it. Returns a proposal id to poll with get_proposal_status. Use this when a routing plan you believe in cannot fit inside the current cap, and say so in the rationale.",
+        "Ask the operator to change a monthly spend cap — either the total across all providers (scope 'total') or one provider's cap (scope 'provider'). Like routing, this is not applied directly: a budget is a spending authorisation, so only the human can grant it. WHAT A CAP DOES: it is advisory in the sense that nothing here proxies traffic, but it is enforced as a compliance blocker — check_compliance and simulate_policy both report TOTAL_BUDGET and PROVIDER_BUDGET blockers when projected spend exceeds a cap, so a routing proposal that busts a cap will not come back clean. If the operator states a spending target in conversation, propose it as the total cap so it becomes an auditable constraint rather than something you have to remember. Returns a proposal id to poll with get_proposal_status.",
       inputSchema: {
         type: 'object',
         properties: {
-          providerId: { type: 'string', description: 'Provider whose cap should change. Call list_providers for valid ids.' },
+          scope: {
+            type: 'string',
+            enum: ['total', 'provider'],
+            description: "'total' changes the cap across all providers; 'provider' changes one provider's cap and requires providerId.",
+          },
+          providerId: { type: 'string', description: "Required when scope is 'provider'. Call list_providers for valid ids." },
           monthlyBudgetUsd: { type: 'number', description: 'Proposed new monthly cap in USD.' },
           rationale: { type: 'string', description: 'Why this cap, tied to projected spend.' },
         },
-        required: ['providerId', 'monthlyBudgetUsd', 'rationale'],
+        required: ['scope', 'monthlyBudgetUsd', 'rationale'],
       },
       execute: (a) => {
         const s = get();
-        const pr = s.providers.find((x) => x.id === a.providerId);
-        if (!pr) return `Unknown providerId "${a.providerId}". Valid: ${s.providers.map((x) => x.id).join(', ')}. Nothing was proposed.`;
+        const scope = a.scope === 'total' ? 'total' : a.scope === 'provider' ? 'provider' : null;
+        if (!scope) return "scope must be 'total' or 'provider'. Nothing was proposed.";
         if (typeof a.monthlyBudgetUsd !== 'number' || !Number.isFinite(a.monthlyBudgetUsd) || a.monthlyBudgetUsd < 0) {
           return 'monthlyBudgetUsd must be a non-negative number. Nothing was proposed.';
         }
         if (typeof a.rationale !== 'string' || a.rationale.trim().length < 10) {
           return 'A rationale of at least 10 characters is required. Nothing was proposed.';
         }
+
+        let label: string;
+        let fromUsd: number;
+        let providerId: string | null = null;
+        if (scope === 'provider') {
+          const pr = s.providers.find((x) => x.id === a.providerId);
+          if (!pr) return `Unknown providerId "${a.providerId}". Valid: ${s.providers.map((x) => x.id).join(', ')}. Nothing was proposed.`;
+          label = `${pr.name} monthly cap`;
+          fromUsd = pr.monthlyBudgetUsd;
+          providerId = pr.id;
+        } else {
+          label = 'total monthly cap';
+          fromUsd = s.totalBudgetUsd;
+        }
+
         const p = s.createProposal({
           kind: 'budget', rationale: a.rationale, rules: null,
-          providerId: pr.id, monthlyBudgetUsd: a.monthlyBudgetUsd,
+          scope, providerId, monthlyBudgetUsd: a.monthlyBudgetUsd,
           projectionBefore: currentProjection(), projectionAfter: null,
         });
-        return `Proposal ${p.id} created and shown to the operator: change ${pr.name} monthly cap from $${pr.monthlyBudgetUsd} to $${a.monthlyBudgetUsd}. Not applied. Call get_proposal_status with proposalId "${p.id}" for the decision.`;
+        const proj = currentProjection().totalMonthlyCostUsd;
+        const fits = scope === 'total' ? proj <= a.monthlyBudgetUsd : true;
+        return [
+          `Proposal ${p.id} created and shown to the operator: change ${label} from $${fromUsd} to $${a.monthlyBudgetUsd}. Not applied.`,
+          scope === 'total' && !fits
+            ? `Note: the live policy already projects $${proj.toFixed(2)}/mo, so this cap would be breached immediately — pair it with a routing proposal.`
+            : '',
+          `Call get_proposal_status with proposalId "${p.id}" for the decision.`,
+        ].filter(Boolean).join(' ');
+      },
+    },
+    {
+      name: 'withdraw_proposal',
+      description:
+        'Retract a proposal you submitted that is still pending, because you have thought better of it or are about to submit a corrected version. Only pending proposals can be withdrawn; an approved one has already been applied and a rejected one is already closed. Prefer this over leaving a stale proposal in the operator\'s queue.',
+      inputSchema: {
+        type: 'object',
+        properties: { proposalId: { type: 'string', description: "Proposal id such as 'P-1'." } },
+        required: ['proposalId'],
+      },
+      execute: (a) => {
+        const s = get();
+        const existing = s.proposals.find((x) => x.id === a.proposalId);
+        if (!existing) return `Unknown proposalId "${a.proposalId}". Call get_proposal_status with no arguments to list all proposals.`;
+        if (existing.status !== 'pending') {
+          return `Proposal ${existing.id} is already ${existing.status} and cannot be withdrawn.`;
+        }
+        s.withdrawProposal(existing.id);
+        return `Proposal ${existing.id} withdrawn and removed from the operator's queue.`;
       },
     },
     {
       name: 'get_proposal_status',
       readOnly: true,
       description:
-        "Check what the operator decided about a proposal you submitted. Status is 'pending' (still on their screen — wait, do not resubmit), 'approved' (applied; re-read get_routing_policy to see the new state) or 'rejected'. A rejection usually carries decisionNote explaining what was wrong; read it and propose a corrected version addressing that specific objection. Omit proposalId to list every proposal and its status.",
+        "Check what the operator decided about a proposal you submitted. Status is 'pending' (still on their screen), 'approved' (applied; re-read get_routing_policy to see the new state), 'rejected', or 'withdrawn' (you retracted it). A human decision can take minutes or hours: if it is still pending, report the proposal id to the user and stop rather than looping — do not resubmit the same rules, and use withdraw_proposal if you want to replace it. A rejection usually carries decisionNote explaining what was wrong; read it and propose a corrected version addressing that specific objection. Omit proposalId to list every proposal and its status.",
       inputSchema: {
         type: 'object',
         properties: { proposalId: { type: 'string', description: "Proposal id such as 'P-1'. Omit to list all." } },

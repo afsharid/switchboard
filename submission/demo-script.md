@@ -20,14 +20,14 @@ the Agent console panel's output if it has stale text.
 
 *Point at the KPI row.*
 
-> "Two hundred and fifty-five dollars a month projected, three compliance
+> "Two hundred and fifty-five dollars a month projected against a sixty-dollar cap, eight compliance
 > blockers. This is Switchboard, and the numbers on it are my own measurements."
 
 ### 0:18–0:32 — What the agent sees
 
 *Open the Agent console panel, expand "tools the browser reports".*
 
-> "The page registers fourteen WebMCP tools on `document.modelContext`. The
+> "The page registers fifteen WebMCP tools on `document.modelContext`. The
 > agent doesn't hunt for buttons — the site hands it functions."
 
 ### 0:32–1:15 — The agent works
@@ -36,6 +36,9 @@ the Agent console panel's output if it has stale text.
 
 > "Look at my models. Build me a routing policy that keeps total spend under
 > twenty dollars a month, and keep realtime p95 under four seconds."
+
+*(The agent should first propose the $20 total cap so the constraint becomes
+auditable, then propose routing that fits inside it.)*
 
 *Let it run. Point at the activity feed as calls land.*
 

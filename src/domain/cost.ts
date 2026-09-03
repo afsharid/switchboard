@@ -93,8 +93,14 @@ export function project(
   };
 }
 
-export const usd = (n: number): string =>
-  !Number.isFinite(n) ? '—' : n >= 100 ? `$${n.toFixed(0)}` : n >= 1 ? `$${n.toFixed(2)}` : `$${n.toFixed(4)}`;
+/** Money for display. Precision scales with magnitude; thousands are grouped. */
+export const usd = (n: number): string => {
+  if (!Number.isFinite(n)) return '—';
+  if (n === 0) return '$0';
+  const abs = Math.abs(n);
+  const dp = abs >= 100 ? 0 : abs >= 1 ? 2 : 4;
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
+};
 
 export const pct = (n: number): string => `${(n * 100).toFixed(0)}%`;
 export const ms = (n: number): string => (n >= 1000 ? `${(n / 1000).toFixed(1)}s` : `${Math.round(n)}ms`);

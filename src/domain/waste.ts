@@ -26,6 +26,7 @@ export function findWaste(
   if (dead.size > 0) {
     out.push({
       code: 'DEAD_LINKS',
+      kind: 'spend',
       title: `${dead.size} routed model${dead.size > 1 ? 's' : ''} never returned a successful call`,
       detail:
         `The policy routes to ${[...dead].map((d) => models.get(d)?.displayName ?? d).join(', ')}. ` +
@@ -55,6 +56,7 @@ export function findWaste(
     if (best && best.monthly < current.monthlyCostUsd * 0.85) {
       out.push({
         code: 'CHEAPER_ELIGIBLE',
+      kind: 'spend',
         title: `"${cls.name}" is routed to a more expensive model than it needs`,
         detail:
           `Current chain projects ${current.monthlyCostUsd.toFixed(2)} USD/mo. ` +
@@ -78,6 +80,7 @@ export function findWaste(
   if (expensiveFailing.length > 0) {
     out.push({
       code: 'EXPENSIVE_AND_FAILING',
+      kind: 'spend',
       title:
         expensiveFailing.length > 1
           ? `${expensiveFailing.length} routed models cost over $1 per 1k successful outputs and still fail quality gates`
@@ -95,6 +98,7 @@ export function findWaste(
   if (unmeasured.length > 0) {
     out.push({
       code: 'UNMEASURED_CATALOGUE',
+      kind: 'hygiene',
       title: `${unmeasured.length} models in the catalogue have published prices but no measurements`,
       detail:
         `${unmeasured.map((m) => m.displayName).join(', ')} can be priced but not compared on quality or latency. ` +
@@ -110,6 +114,7 @@ export function findWaste(
     if (ok.length === 0) {
       out.push({
         code: 'NO_ELIGIBLE_MODEL',
+      kind: 'risk',
         title: `No model in the catalogue satisfies every constraint on "${cls.name}"`,
         detail:
           `This class is currently unroutable without relaxing a constraint. ` +
@@ -120,6 +125,7 @@ export function findWaste(
     } else if (ok.length <= 2) {
       out.push({
         code: 'THIN_ELIGIBILITY',
+      kind: 'risk',
         title: `Only ${ok.length} model${ok.length > 1 ? 's' : ''} can legally serve "${cls.name}"`,
         detail:
           `Eligible: ${ok.map((m) => m.displayName).join(', ')}. ` +

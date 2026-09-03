@@ -16,7 +16,10 @@ const routedIds = (): string[] => {
 export function KpiRow() {
   const { classes, policy, models, totalBudgetUsd } = useSwitchboard();
   const proj = currentProjection();
-  const violations = checkCompliance(classes, policy, models, { totalMonthlyBudgetUsd: totalBudgetUsd });
+  const providers = useSwitchboard((st) => st.providers);
+  const violations = checkCompliance(classes, policy, models, {
+    totalMonthlyBudgetUsd: totalBudgetUsd, providers,
+  });
   const blockers = violations.filter((v) => v.severity === 'blocker').length;
   const waste = findWaste(classes, policy, models);
   const savings = waste.reduce((a, w) => a + (w.estimatedMonthlySavingsUsd ?? 0), 0);
@@ -132,9 +135,12 @@ export function ProposalsPanel() {
                   ))}
                 </ul>
               )}
-              {p.kind === 'budget' && p.providerId && (
+              {p.kind === 'budget' && (
                 <p className="mt-2 text-[11px] tnum">
-                  {providers.find((x) => x.id === p.providerId)?.name ?? p.providerId} cap → ${p.monthlyBudgetUsd}
+                  {p.scope === 'total'
+                    ? 'Total monthly cap'
+                    : providers.find((x) => x.id === p.providerId)?.name ?? p.providerId}{' '}
+                  → ${p.monthlyBudgetUsd}
                 </p>
               )}
               {after !== null && (
@@ -177,7 +183,9 @@ export function ProposalsPanel() {
           <ul className="space-y-1 pt-1 text-[11px]">
             {decided.map((p) => (
               <li key={p.id} className="flex items-start gap-2">
-                <Badge tone={p.status === 'approved' ? 'good' : 'critical'}>{p.status}</Badge>
+                <Badge tone={p.status === 'approved' ? 'good' : p.status === 'withdrawn' ? 'neutral' : 'critical'}>
+                  {p.status}
+                </Badge>
                 <span style={{ color: 'var(--ink-muted)' }}>
                   {p.id}
                   {p.decisionNote ? ` — “${p.decisionNote}”` : ''}
@@ -234,7 +242,7 @@ export function ClassesPanel() {
                   <input
                     type="number" min={0} step={1000} value={c.monthlyCalls}
                     onChange={(e) => setClassVolume(c.id, Number(e.target.value))}
-                    className="w-24 rounded border bg-transparent px-1.5 py-0.5 text-right text-[11px] tnum outline-none focus:border-white/25"
+                    className="w-28 rounded border bg-transparent px-1.5 py-0.5 text-right text-[11px] tnum outline-none focus:border-white/25"
                     style={{ borderColor: 'var(--hairline)', color: 'var(--ink)' }}
                   />
                 </label>
@@ -276,9 +284,11 @@ export function ProvidersPanel() {
             <li key={pr.id}>
               <div className="flex items-baseline justify-between gap-2 text-xs">
                 <span>{pr.name}</span>
-                <span className="tnum" style={{ color: over ? 'var(--critical)' : 'var(--ink-2)' }}>
-                  {usd(spend)} / ${pr.monthlyBudgetUsd}
-                  {over && <span className="ml-1">over</span>}
+                <span className="flex items-baseline gap-1.5">
+                  <span className="tnum" style={{ color: over ? 'var(--critical)' : 'var(--ink-2)' }}>
+                    {usd(spend)} / ${pr.monthlyBudgetUsd}
+                  </span>
+                  {over && <Badge tone="critical" title="projected spend exceeds this cap">⚠ over</Badge>}
                 </span>
               </div>
               <div className="mt-1"><Meter value={spend} max={pr.monthlyBudgetUsd} over={over} /></div>
@@ -294,16 +304,28 @@ export function WastePanel() {
   const { classes, policy, models } = useSwitchboard();
   const findings = findWaste(classes, policy, models);
   return (
-    <Card title="Waste findings" subtitle="Every finding cites the measurement it came from.">
+    <Card title="Policy findings" subtitle="Tagged by kind: spend is money, risk is fragility, hygiene is a data gap.">
       {findings.length === 0 && <Empty>No waste detected under the current policy.</Empty>}
       <ul className="space-y-2.5">
         {findings.map((f) => (
           <li key={f.code}>
             <div className="flex items-start justify-between gap-2">
               <h3 className="text-xs font-medium leading-snug">{f.title}</h3>
-              {f.estimatedMonthlySavingsUsd !== null && (
-                <Badge tone="warning">{usd(f.estimatedMonthlySavingsUsd)}/mo</Badge>
-              )}
+              <span className="flex shrink-0 items-center gap-1">
+                <Badge
+                  tone={f.kind === 'spend' ? 'warning' : f.kind === 'risk' ? 'critical' : 'neutral'}
+                  title={
+                    f.kind === 'spend' ? 'money is being wasted now'
+                      : f.kind === 'risk' ? 'a fragility, not a cost'
+                        : 'a gap in the data, not a cost'
+                  }
+                >
+                  {f.kind}
+                </Badge>
+                {f.estimatedMonthlySavingsUsd !== null && (
+                  <Badge tone="warning">{usd(f.estimatedMonthlySavingsUsd)}/mo</Badge>
+                )}
+              </span>
             </div>
             <p className="mt-1 text-[11px] leading-relaxed" style={{ color: 'var(--ink-muted)' }}>{f.detail}</p>
           </li>

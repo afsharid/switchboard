@@ -31,6 +31,7 @@ type Actions = {
   applyRulesDirect: (rules: Rule[]) => void;
   createProposal: (p: Omit<Proposal, 'id' | 'createdAt' | 'status' | 'decidedAt' | 'decisionNote'>) => Proposal;
   decideProposal: (id: string, status: 'approved' | 'rejected', note: string | null) => Proposal | null;
+  withdrawProposal: (id: string) => Proposal | null;
   setSimulation: (s: Simulation | null) => void;
   pinInsight: (title: string, body: string) => Insight;
   resetDemo: () => void;
@@ -114,11 +115,21 @@ export const useSwitchboard = create<State & Actions>()(
 
         if (status === 'approved') {
           if (p.kind === 'policy' && p.rules) get().applyRulesDirect(p.rules);
-          if (p.kind === 'budget' && p.providerId && p.monthlyBudgetUsd !== null) {
-            get().setProviderBudgetDirect(p.providerId, p.monthlyBudgetUsd);
+          if (p.kind === 'budget' && p.monthlyBudgetUsd !== null) {
+            if (p.scope === 'total') get().setTotalBudget(p.monthlyBudgetUsd);
+            else if (p.providerId) get().setProviderBudgetDirect(p.providerId, p.monthlyBudgetUsd);
           }
         }
         return decided;
+      },
+
+      withdrawProposal: (id) => {
+        const s = get();
+        const p = s.proposals.find((x) => x.id === id);
+        if (!p || p.status !== 'pending') return null;
+        const w: Proposal = { ...p, status: 'withdrawn', decidedAt: new Date().toISOString(), decisionNote: null };
+        set({ proposals: s.proposals.map((x) => (x.id === id ? w : x)) });
+        return w;
       },
 
       setSimulation: (simulation) => set({ simulation }),

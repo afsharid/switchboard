@@ -1,7 +1,15 @@
 import type { Model, Policy, TrafficClass, Violation } from './types';
-import { byId, chainOf, projectClass } from './cost';
+import { byId, chainOf, project, projectClass } from './cost';
 
-/** Does this model satisfy a class's constraints on its own? */
+/**
+ * Does this model satisfy a class's constraints on its own?
+ *
+ * `role` encodes the one asymmetry in the model: performance constraints
+ * (quality gates, latency) degrade to warnings on a fallback, because a
+ * fallback only runs when the primary already failed and a slower answer beats
+ * no answer. Governance constraints (retention, training) never degrade — a
+ * fallback that leaks customer data leaks it just as thoroughly.
+ */
 export function modelViolations(
   m: Model,
   cls: TrafficClass,
@@ -42,8 +50,10 @@ export function modelViolations(
   }
   if (!c.allowTrainingOnData) {
     if (m.trainsOnData === null) {
-      add('warning', 'TRAINING_UNKNOWN',
-        `${m.displayName} does not document whether it trains on submitted data.`);
+      // Symmetric with RETENTION_UNKNOWN: on a class that forbids training,
+      // "not documented" cannot be cleared. Unknown is not safe.
+      add('blocker', 'TRAINING_UNKNOWN',
+        `${m.displayName} does not document whether it trains on submitted data, so it cannot be cleared for this class.`);
     } else if (m.trainsOnData) {
       add('blocker', 'TRAINING', `${m.displayName} trains on submitted data.`);
     }
@@ -55,7 +65,7 @@ export function checkCompliance(
   classes: TrafficClass[],
   policy: Policy,
   modelList: Model[],
-  budgets: { totalMonthlyBudgetUsd: number | null },
+  budgets: { totalMonthlyBudgetUsd: number | null; providers?: { id: string; name: string; monthlyBudgetUsd: number }[] },
 ): Violation[] {
   const models = byId(modelList);
   const ruleFor = new Map(policy.rules.map((r) => [r.classId, r]));
@@ -87,6 +97,25 @@ export function checkCompliance(
     if (cls.constraints.maxP95Ms !== null && proj.worstCaseLatencyMs > cls.constraints.maxP95Ms) {
       out.push({ severity: 'warning', classId: cls.id, modelId: null, code: 'CHAIN_LATENCY',
         message: `"${cls.name}" can take up to ${proj.worstCaseLatencyMs}ms once fallbacks are exhausted, over its ${cls.constraints.maxP95Ms}ms ceiling.` });
+    }
+  }
+
+  // Spend caps, audited alongside everything else so that an empty blocker
+  // list actually is the bar a proposal has to clear.
+  const proj = project(classes, policy, modelList);
+  if (budgets.totalMonthlyBudgetUsd !== null && proj.totalMonthlyCostUsd > budgets.totalMonthlyBudgetUsd) {
+    out.push({
+      severity: 'blocker', classId: null, modelId: null, code: 'TOTAL_BUDGET',
+      message: `Projected spend is $${proj.totalMonthlyCostUsd.toFixed(2)}/mo against a total cap of $${budgets.totalMonthlyBudgetUsd}/mo.`,
+    });
+  }
+  for (const pr of budgets.providers ?? []) {
+    const spend = proj.perProviderUsd[pr.id] ?? 0;
+    if (spend > pr.monthlyBudgetUsd) {
+      out.push({
+        severity: 'blocker', classId: null, modelId: null, code: 'PROVIDER_BUDGET',
+        message: `${pr.name} is projected at $${spend.toFixed(2)}/mo against its $${pr.monthlyBudgetUsd}/mo cap.`,
+      });
     }
   }
 

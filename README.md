@@ -38,9 +38,9 @@ Tools are split by blast radius, and the split is the design:
 | | Tools | Behaviour |
 |---|---|---|
 | **Read-only** | `get_provenance`, `list_providers`, `list_traffic_classes`, `list_models`, `get_model`, `compare_models`, `get_routing_policy`, `simulate_policy`, `check_compliance`, `find_waste` | Called freely. `simulate_policy` also renders its projection on the human's screen, so they can follow the agent's reasoning as it iterates. |
-| **Guarded** | `propose_policy_change`, `propose_budget_change` | Do **not** mutate. They create a proposal, return its id, and tell the agent to wait. |
+| **Guarded** | `propose_policy_change`, `propose_budget_change` | Do **not** mutate. They create a proposal, return its id, and tell the agent to wait. Budget proposals cover both a provider cap and the total cap. |
 | **Unguarded write** | `pin_insight` | Applies immediately — it only adds a note. Proof that the guard is a considered choice, not a blanket block. |
-| **Poll** | `get_proposal_status` | Returns `pending` / `approved` / `rejected`, plus any note the human left. |
+| **Poll / retract** | `get_proposal_status`, `withdraw_proposal` | Status returns `pending` / `approved` / `rejected` / `withdrawn`, plus any note the human left. An agent that thinks better of a proposal can retract it rather than leave it stale. |
 
 The approval loop is an **asynchronous handshake conducted entirely through the
 tool return channel**. No out-of-band signalling:
@@ -125,7 +125,7 @@ VOLTWISE_ROOT=/path/to/eval/repo npm run seed
 **In Chrome** — enable `chrome://flags/#enable-webmcp-testing`, reload, then:
 
 ```js
-await document.modelContext.getTools()   // 14 tools with their schemas
+await document.modelContext.getTools()   // 15 tools with their schemas
 ```
 
 **Without any WebMCP client** — the built-in **Agent console** panel lists the
@@ -139,6 +139,23 @@ Recharts. No backend and no database: WebMCP tools execute in the page, so
 server state would add failure modes without adding capability. **Reset demo**
 restores the seeded state.
 
+### Constraint semantics worth knowing
+
+- **Governance never degrades.** Quality-gate and latency constraints soften to
+  warnings on a *fallback* — a slow answer beats no answer. Retention and
+  training constraints do not: a fallback that leaks customer data leaks it
+  just as thoroughly.
+- **Undocumented is not safe.** A model with `dataRetentionDays: null` or
+  `trainsOnData: null` is *blocked* on a class that constrains either, rather
+  than assumed compliant. Note the polarity trap: `null` on a *class*
+  constraint means unconstrained; `null` on a *model* means undocumented.
+- **Spend is a constraint too.** `check_compliance` reports `TOTAL_BUDGET` and
+  `PROVIDER_BUDGET` blockers, so "no blockers" genuinely means the plan fits the
+  declared budget — not merely that it is technically permissible.
+- **Sample sizes are small** (median 33 calls per model). `get_provenance`
+  returns a `samplingCaveat` telling an agent to treat p95 as coarse and not to
+  present sub-second latency differences as decisive.
+
 `src/webmcp/shim.ts` resolves the imperative API from **`document.modelContext`**,
 falling back to `navigator.modelContext` for hosts still on the pre-Chrome-150
 name. `src/webmcp/useTool.ts` registers every tool under one `AbortController`
@@ -150,7 +167,7 @@ src/
   data/          seed.json (generated, committed) + operator-declared initial state
   domain/        cost projection, compliance evaluation, waste detectors — all pure
   store/         zustand store; the only place state mutates
-  webmcp/        shim, registration hook, and the 14 tool definitions
+  webmcp/        shim, registration hook, and the 15 tool definitions
   features/      dashboard panels + agent console
   ui/            design tokens, primitives, charts
 ```
