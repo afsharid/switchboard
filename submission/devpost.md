@@ -148,6 +148,15 @@ Two things the real data happened to show, neither designed in:
    policy, because one class is routed to a model costing $2.24 per 1000
    successful outputs when a compliant alternative costs $0.09.
 
+### The one lever the agent does not have
+
+When a class has no compliant model, that is not an optimisation problem. The
+agent says so and stops. The **human** can then open *relax constraints* on the
+class and accept 30-day retention — and only then can the agent route it. There
+is deliberately no tool for changing a constraint: deciding which risk to accept
+is the operator's call. Verified end to end — `compare_models` returns an empty
+ranking before, and GPT 5.6 Luna at $2.43/mo after.
+
 ## Stack
 
 Vite + React 19 + TypeScript, Tailwind v4, Zustand, Recharts. No backend, no

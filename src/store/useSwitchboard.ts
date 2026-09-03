@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
-  ActivityEntry, Insight, Model, Policy, Projection, Proposal, Provider, Rule, TrafficClass,
+  ActivityEntry, Constraints, Insight, Model, Policy, Projection, Proposal, Provider, Rule, TrafficClass,
 } from '../domain/types';
 import {
   INITIAL_CLASSES, INITIAL_POLICY, INITIAL_PROVIDERS, INITIAL_TOTAL_BUDGET_USD, seed,
@@ -26,6 +26,7 @@ type State = {
 type Actions = {
   logActivity: (e: Omit<ActivityEntry, 'id' | 'at'>) => void;
   setClassVolume: (classId: string, monthlyCalls: number) => void;
+  setClassConstraint: <K extends keyof Constraints>(classId: string, key: K, value: Constraints[K]) => void;
   setTotalBudget: (usd: number) => void;
   setProviderBudgetDirect: (providerId: string, usd: number) => void;
   applyRulesDirect: (rules: Rule[]) => void;
@@ -68,6 +69,19 @@ export const useSwitchboard = create<State & Actions>()(
         set((s) => ({
           classes: s.classes.map((c) =>
             c.id === classId ? { ...c, monthlyCalls: Math.max(0, Math.round(monthlyCalls)) } : c,
+          ),
+        })),
+
+      /**
+       * Deliberately has no tool behind it. When no model can satisfy a class,
+       * the only way out is to relax a constraint — and choosing which risk to
+       * accept is the operator's call, not the agent's. The agent can surface
+       * the trade-off; only this control resolves it.
+       */
+      setClassConstraint: (classId, key, value) =>
+        set((s) => ({
+          classes: s.classes.map((c) =>
+            c.id === classId ? { ...c, constraints: { ...c.constraints, [key]: value } } : c,
           ),
         })),
 

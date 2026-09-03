@@ -3,10 +3,10 @@ import { useSwitchboard, currentProjection, candidateProjection } from '../store
 import { Badge, Card, Empty, Meter, Stat } from '../ui/primitives';
 import { BeforeAfterBars, CostLatencyScatter } from '../ui/charts';
 import { chainOf, ms, pct, usd } from '../domain/cost';
-import { checkCompliance } from '../domain/compliance';
+import { checkCompliance, eligibleModels } from '../domain/compliance';
 import { findWaste } from '../domain/waste';
 import { seed } from '../data/initial';
-import type { Model } from '../domain/types';
+import type { Model, TrafficClass } from '../domain/types';
 
 const routedIds = (): string[] => {
   const s = useSwitchboard.getState();
@@ -43,7 +43,7 @@ export function KpiRow() {
         label="Identified savings"
         value={savings > 0 ? usd(savings) : '—'}
         unit={savings > 0 ? '/mo' : undefined}
-        context={`${waste.length} waste finding${waste.length === 1 ? '' : 's'}`}
+        context={`${waste.length} policy finding${waste.length === 1 ? '' : 's'}`}
         tone={savings > 0 ? 'warning' : 'neutral'}
       />
       <Stat
@@ -199,6 +199,72 @@ export function ProposalsPanel() {
   );
 }
 
+function ConstraintEditor({ cls }: { cls: TrafficClass }) {
+  const setClassConstraint = useSwitchboard((s) => s.setClassConstraint);
+  const models = useSwitchboard((s) => s.models);
+  const c = cls.constraints;
+  const eligible = eligibleModels(cls, models).length;
+
+  return (
+    <details className="mt-2">
+      <summary className="cursor-pointer text-[11px] select-none" style={{ color: 'var(--ink-muted)' }}>
+        relax constraints ({eligible} model{eligible === 1 ? '' : 's'} eligible)
+      </summary>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 rounded p-2 text-[11px]"
+        style={{ background: 'var(--plane)' }}>
+        <label className="flex items-center gap-1.5" style={{ color: 'var(--ink-2)' }}>
+          <input
+            type="checkbox" checked={c.requireQualityGates}
+            onChange={(e) => setClassConstraint(cls.id, 'requireQualityGates', e.target.checked)}
+          />
+          require quality gates
+        </label>
+        <label className="flex items-center gap-1.5" style={{ color: 'var(--ink-2)' }}>
+          <input
+            type="checkbox" checked={!c.allowTrainingOnData}
+            onChange={(e) => setClassConstraint(cls.id, 'allowTrainingOnData', !e.target.checked)}
+          />
+          forbid training on data
+        </label>
+        <label className="flex items-center gap-1.5" style={{ color: 'var(--ink-2)' }}>
+          max retention
+          <select
+            value={c.maxDataRetentionDays === null ? 'none' : String(c.maxDataRetentionDays)}
+            onChange={(e) =>
+              setClassConstraint(cls.id, 'maxDataRetentionDays',
+                e.target.value === 'none' ? null : Number(e.target.value))}
+            className="rounded border bg-transparent px-1 py-0.5 text-[11px]"
+            style={{ borderColor: 'var(--hairline)', color: 'var(--ink)' }}
+          >
+            <option value="0" style={{ background: 'var(--surface-1)' }}>0 days</option>
+            <option value="7" style={{ background: 'var(--surface-1)' }}>7 days</option>
+            <option value="30" style={{ background: 'var(--surface-1)' }}>30 days</option>
+            <option value="none" style={{ background: 'var(--surface-1)' }}>no limit</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5" style={{ color: 'var(--ink-2)' }}>
+          p95 ceiling
+          <select
+            value={c.maxP95Ms === null ? 'none' : String(c.maxP95Ms)}
+            onChange={(e) =>
+              setClassConstraint(cls.id, 'maxP95Ms', e.target.value === 'none' ? null : Number(e.target.value))}
+            className="rounded border bg-transparent px-1 py-0.5 text-[11px]"
+            style={{ borderColor: 'var(--hairline)', color: 'var(--ink)' }}
+          >
+            <option value="2000" style={{ background: 'var(--surface-1)' }}>2s</option>
+            <option value="4000" style={{ background: 'var(--surface-1)' }}>4s</option>
+            <option value="8000" style={{ background: 'var(--surface-1)' }}>8s</option>
+            <option value="none" style={{ background: 'var(--surface-1)' }}>no limit</option>
+          </select>
+        </label>
+        <p className="w-full leading-snug" style={{ color: 'var(--ink-muted)' }}>
+          No agent tool can change these. Deciding which risk to accept is yours.
+        </p>
+      </div>
+    </details>
+  );
+}
+
 export function ClassesPanel() {
   const { classes, policy, models, setClassVolume } = useSwitchboard();
   const proj = currentProjection();
@@ -254,6 +320,8 @@ export function ClassesPanel() {
               <p className="mt-2 text-[11px] tnum" style={{ color: 'var(--ink-2)' }}>
                 {rule ? [rule.primaryModelId, ...rule.fallbackModelIds].join('  →  ') : 'no rule'}
               </p>
+
+              <ConstraintEditor cls={c} />
             </article>
           );
         })}
@@ -443,7 +511,9 @@ export function ActivityPanel() {
             >
               <span style={{ color: a.ok ? 'var(--good)' : 'var(--critical)' }}>{a.ok ? '●' : '▲'}</span>
               <span className="font-medium">{a.tool}</span>
-              <span className="ml-auto tnum" style={{ color: 'var(--ink-muted)' }}>{a.durationMs}ms</span>
+              <span className="ml-auto tnum" style={{ color: 'var(--ink-muted)' }}>
+                {a.durationMs < 1 ? '<1ms' : `${a.durationMs}ms`}
+              </span>
             </button>
             {open === a.id && (
               <div className="mb-1 ml-4 space-y-1">

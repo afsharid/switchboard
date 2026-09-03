@@ -98,6 +98,15 @@ cannot solve it; `compare_models` returns an explicit note saying a human has to
 decide which constraint to relax. That is the correct behaviour, and it is the
 part of the human-agent relationship that automation demos usually skip.
 
+### The one lever the agent does not have
+
+When a class has no compliant model, that is not an optimisation problem. The
+agent says so and stops. The **human** can then open *relax constraints* on the
+class and accept 30-day retention — and only then can the agent route it. There
+is deliberately no tool for changing a constraint: deciding which risk to accept
+is the operator's call. Verified end to end — `compare_models` returns an empty
+ranking before, and GPT 5.6 Luna at $2.43/mo after.
+
 ## Running it
 
 ```bash

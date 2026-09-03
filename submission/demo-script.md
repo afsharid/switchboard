@@ -74,7 +74,7 @@ auditable, then propose routing that fits inside it.)*
 > "Two hundred and fifty-five dollars down to about twenty-eight. Applied only
 > because I approved it."
 
-### 1:50–2:25 — The part the agent can't solve
+### 1:50–2:30 — The part the agent can't solve, and who can
 
 *Scroll to the sensitive traffic class — the red blocker badge.*
 
@@ -83,16 +83,26 @@ auditable, then propose routing that fits inside it.)*
 
 *Ask the agent:* "What about the customer-data class?"
 
-> "There is no answer. The one model that passes my quality gates retains data
-> for thirty days. So `compare_models` comes back empty, with a note saying a
-> human has to decide which constraint to relax — and it pins that trade-off to
-> my dashboard instead of quietly picking something non-compliant."
+> "There's no answer. The one model that passes my quality gates retains data
+> for thirty days. So `compare_models` comes back empty — with a note saying a
+> human has to decide which constraint to relax. It won't quietly pick something
+> non-compliant, and it can't relax the constraint itself. There's no tool for
+> that, on purpose."
 
-### 2:25–2:40 — Close
+*Open "relax constraints" on that class and switch retention to 30 days.*
 
-> "That's the point. An agent that can read the same board I can, propose real
-> changes with real numbers behind them, and know when to stop and ask. Code's
-> MIT, data provenance is in the README."
+> "That's my call to make, not its. I'll accept thirty-day retention."
+
+*Ask the agent again.* It now returns GPT 5.6 Luna at $2.43/mo.
+
+> "And now it can work. That's the handoff: it found the trade-off, I made the
+> judgement, it did the rest."
+
+### 2:30–2:45 — Close
+
+> "An agent reading the same board I am, proposing real changes with real
+> numbers behind them, and knowing exactly where to stop and ask. Fifteen
+> WebMCP tools, six hundred and sixty-seven real measured calls, MIT licence."
 
 ---
 
