@@ -13,6 +13,42 @@ Built for the [OpenAI WebMCP Challenge](https://webmcp.devpost.com/).
 
 ---
 
+## How this was built
+
+Written by me with two AI coding agents, used for different things because they
+could reach different places.
+
+**Claude Opus 5** (Claude Code) wrote the application, the seed-extraction
+script, the domain logic and the test suite, and verified it against Chrome
+Canary 155 with `chrome://flags/#enable-webmcp-testing`.
+
+**ChatGPT / Codex** drove the deployed page through **ChatGPT's own in-app
+browser** — the browser this challenge is primarily judged in, and the one
+Claude had no way to reach. That was not a formality. It found two real defects:
+
+1. **`window.confirm` is never surfaced in that browser.** "Reset demo" was
+   completely dead there: the click did nothing, state persisted, and a judge
+   had no way back to a clean slate. In Chrome it worked perfectly, so no amount
+   of local testing would have caught it. Now an in-page dialog, with the e2e
+   suite stubbing `confirm`/`alert`/`prompt` to throw so it cannot regress.
+2. **A scripted demo target was arithmetically impossible.** Asked for a policy
+   under $20/mo, the agent worked out that the compliant floor is $22.84 —
+   realtime has exactly one eligible model at $9.39, the cheapest compliant
+   batch model is $11.02, the customer-data class adds $2.43 — and said so with
+   the arithmetic instead of proposing something non-compliant that hit the
+   number. It also showed that a rejection note referring to a fallback landed
+   on nothing, because the agent proposes empty fallback chains. Both the demo
+   script and `get_proposal_status`'s guidance changed as a result.
+
+Every design decision — the idea, the stack, publishing the measurement data,
+making constraint relaxation a human-only control — was mine. The commit history
+records which agent contributed to which change.
+
+Neither of them could have done this alone, which is a slightly on-the-nose
+illustration of the thing the project is actually about: an agent is most useful
+when it can reach something you cannot, and when you can see exactly what it
+did.
+
 ## Project origin
 
 Switchboard was **written from scratch on 2026-09-03**, inside the WebMCP
