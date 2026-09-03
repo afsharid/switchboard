@@ -54,6 +54,14 @@ the proposal.
 Built for the OpenAI WebMCP Challenge.
 ```
 
+## Uploaded
+
+https://youtu.be/t8EBr6bc878
+
+Title and channel confirmed via oEmbed. oEmbed also resolves for *unlisted*
+videos, so it cannot prove the visibility setting — check in YouTube Studio
+that it reads **Public**, since that is the one thing the rules require.
+
 ## After uploading
 
 Paste the watch URL into the Devpost submission's video field. Devpost wants the

@@ -4,6 +4,7 @@
 
 Live: https://switchboard-100.pages.dev
 Repo: https://github.com/afsharid/switchboard (MIT)
+Video: https://youtu.be/t8EBr6bc878
 
 ---
 

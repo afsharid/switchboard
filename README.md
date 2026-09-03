@@ -210,6 +210,8 @@ part of the human-agent relationship that automation demos usually skip.
 
 ### The demo video
 
+**Watch it:** https://youtu.be/t8EBr6bc878
+
 `submission/switchboard-demo.mp4` is a recording of **ChatGPT's own in-app
 browser** on GPT-5.6 Sol, driven against the live deployment. Nothing in it is
 mocked: the agent discovered the fifteen tools itself, simulated, refused to
