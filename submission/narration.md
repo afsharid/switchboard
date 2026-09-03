@@ -1,5 +1,13 @@
 # Narration script
 
+**The shipped video is a recording of ChatGPT's own in-app browser**, driven end
+to end against the live deployment — every tool call in it was made by GPT-5.6
+Sol, not scripted. `cut-list.json` records which line maps to which offset in
+the 15:35 raw take, so the edit is reproducible. Note the order: the agent
+raised the customer-data conflict *before* it proposed anything, so lines 11 and
+12 sit between 06 and 07 rather than at the end — the narration follows what
+actually happened.
+
 Fifteen lines, in order. The current audio is macOS `say` (Samantha) — usable,
 but any decent TTS or a human read will be better. Two ways to swap it in:
 

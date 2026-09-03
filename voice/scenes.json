@@ -1,0 +1,77 @@
+[
+ {
+  "id": "01",
+  "text": "This is Switchboard. It routes my LLM traffic, and the numbers on it are my own measurements: six hundred and sixty seven real API calls across nineteen models.",
+  "dur": 8.53
+ },
+ {
+  "id": "02",
+  "text": "Two hundred and fifty five dollars a month projected, against a sixty dollar cap. Six compliance blockers. Of those nineteen models, exactly one passed my quality gates, and eight never returned a single successful call.",
+  "dur": 10.42
+ },
+ {
+  "id": "03",
+  "text": "The page registers fifteen WebMCP tools on document dot modelContext. An agent doesn't hunt for buttons. The site hands it functions.",
+  "dur": 8.35
+ },
+ {
+  "id": "04",
+  "text": "So I ask it to build me a routing policy under twenty five dollars a month, keeping realtime p ninety five under four seconds.",
+  "dur": 6.58
+ },
+ {
+  "id": "05",
+  "text": "It calls find waste, compares models, and simulates. Every call lands in this feed with its arguments and result, so nothing it does is invisible.",
+  "dur": 8.59
+ },
+ {
+  "id": "06",
+  "text": "And when it simulates, the projection renders on my screen. I'm watching it search the trade off space, not reading a summary afterwards.",
+  "dur": 7.01
+ },
+ {
+  "id": "07",
+  "text": "Now the important part. It cannot apply this. There is no apply policy tool and no set budget tool. It creates a proposal and gets told to wait.",
+  "dur": 8.35
+ },
+ {
+  "id": "08",
+  "text": "I reject it, with a reason: realtime has no fallback.",
+  "dur": 3.04
+ },
+ {
+  "id": "09",
+  "text": "It reads that note back through get proposal status, finds no fully compliant fallback exists, picks the closest one, and tells me about the one hundred and eighty seven millisecond overage instead of hiding it.",
+  "dur": 10.24
+ },
+ {
+  "id": "10",
+  "text": "I approve. Two hundred and fifty five dollars down to twenty three. Applied only because I said so.",
+  "dur": 5.05
+ },
+ {
+  "id": "11",
+  "text": "Now the one it can't solve. This class carries customer records: zero data retention, and it has to pass quality gates.",
+  "dur": 5.54
+ },
+ {
+  "id": "12",
+  "text": "There is no answer. The only model that passes my gates retains data for thirty days. So it returns an empty ranking and says a human has to decide which constraint to relax.",
+  "dur": 8.47
+ },
+ {
+  "id": "13",
+  "text": "That's my call, not its. I accept thirty day retention.",
+  "dur": 3.16
+ },
+ {
+  "id": "14",
+  "text": "And now it can work. It found the trade off, I made the judgement, it did the rest.",
+  "dur": 3.77
+ },
+ {
+  "id": "15",
+  "text": "An agent reading the same board I am, proposing real changes with real numbers behind them, and knowing exactly where to stop and ask.",
+  "dur": 6.33
+ }
+]

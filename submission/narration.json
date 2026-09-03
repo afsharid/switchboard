@@ -33,7 +33,7 @@
  },
  {
   "id": "09",
-  "text": "It reads that note back through get proposal status, finds no fully compliant fallback exists, picks the closest one, and tells me about the one hundred and eighty seven millisecond overage instead of hiding it."
+  "text": "It reads that note back through get proposal status, finds that no fully compliant fallback exists, picks the closest one, and tells me the fallback chain can reach seven point eight seconds instead of hiding it."
  },
  {
   "id": "10",
@@ -45,7 +45,7 @@
  },
  {
   "id": "12",
-  "text": "There is no answer. The only model that passes my gates retains data for thirty days. So it returns an empty ranking and says a human has to decide which constraint to relax."
+  "text": "There is no answer. The only model that passes my quality gates retains data for thirty days. So it refuses to route that class, and says a human has to decide which constraint to relax."
  },
  {
   "id": "13",

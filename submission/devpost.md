@@ -178,6 +178,22 @@ is deliberately no tool for changing a constraint: deciding which risk to accept
 is the operator's call. Verified end to end — `compare_models` returns an empty
 ranking before, and GPT 5.6 Luna at $2.43/mo after.
 
+## The video is the real thing
+
+The submitted video is a recording of **ChatGPT's own in-app browser** on
+GPT-5.6 Sol, driven against the live deployment. Every tool call in it was made
+by the agent. It discovered the fifteen tools, simulated, **refused to route the
+customer-data class and asked me to decide**, proposed for the other two
+classes, read my rejection note back verbatim, corrected itself while disclosing
+the fallback's 7.8-second tail rather than hiding it, and was applied only after
+I approved.
+
+That recording also taught us the sharpest limit of WebMCP: **a page cannot
+notify an agent.** The protocol is one-directional — the page exposes tools, the
+agent calls them. There is no channel for "the human just decided." So the
+approval loop needs the operator to say "I rejected it, read my note," which is
+visible in the video. Worth knowing if you are designing around this standard.
+
 ## Verified in ChatGPT's in-app browser
 
 Run end to end on GPT-5.6 Terra against the deployed URL. All 15 tools were

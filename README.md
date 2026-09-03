@@ -208,6 +208,21 @@ cannot solve it; `compare_models` returns an explicit note saying a human has to
 decide which constraint to relax. That is the correct behaviour, and it is the
 part of the human-agent relationship that automation demos usually skip.
 
+### The demo video
+
+`submission/switchboard-demo.mp4` is a recording of **ChatGPT's own in-app
+browser** on GPT-5.6 Sol, driven against the live deployment. Nothing in it is
+mocked: the agent discovered the fifteen tools itself, simulated, refused to
+route the customer-data class, proposed, read a rejection note back, corrected
+itself, and got approved. The cut list is in `submission/cut-list.json`.
+
+One thing that recording taught us about WebMCP: **a page cannot notify an
+agent.** The protocol is one-directional — the page exposes tools, the agent
+calls them. So when the operator rejects a proposal, the agent does not know
+until it polls `get_proposal_status`, which is why the video shows a human
+saying "I rejected it, read my note." That is a limit of the standard, not of
+this implementation.
+
 ### The one lever the agent does not have
 
 When a class has no compliant model, that is not an optimisation problem. The
